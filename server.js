@@ -45,13 +45,13 @@ const PORT = process.env.PORT || 3001;
 const isDev = process.env.ENV_FILE === '.env.dev' || process.env.NODE_ENV === 'development';
 
 if (isDev) {
-  console.log(chalk.yellow('[DEV] Development mode active — verbose API logging enabled'));
+  console.info(chalk.yellow('[DEV] Development mode active — verbose API logging enabled'));
 }
 
 if (isDev) {
   app.use((req, res, next) => {
     if (req.path.startsWith('/api')) {
-      console.log(chalk.magenta(`[DEV] API Request: ${req.method} ${req.originalUrl}`));
+      console.info(chalk.magenta(`[DEV] API Request: ${req.method} ${req.originalUrl}`));
     }
     next();
   });
@@ -67,19 +67,24 @@ const { generateDomainNames } = require('./gemini');
 
 // Unified endpoint for domain details
 app.get('/api/check', async (req, res) => {
-  const domainName = req.query.domain;
-  
+  let domainName = req.query.domain;
+
   if (!domainName) {
     return res.status(400).json({ error: 'Domain name is required' });
+  }
+
+  domainName = domainName.trim();
+  if (!domainName.includes('.')) {
+    domainName += '.com';
   }
 
   try {
     // 1. Check availability
     const availResult = await checkDomainAvailability(domainName);
-    
+
     // 2. Fetch extended info (whois + restrictions)
     const extInfo = await getDomainInfo(domainName);
-    
+
     // Combine results
     const responseData = {
       domain: domainName,
@@ -103,7 +108,7 @@ app.get('/api/check', async (req, res) => {
 app.post('/api/generate', async (req, res) => {
   try {
     const { name, prefixes, suffixes, prompt, tlds } = req.body;
-    
+
     if (!name) {
       return res.status(400).json({ error: 'Base name is required' });
     }
@@ -121,11 +126,31 @@ app.use((req, res) => {
   res.sendFile(path.join(__dirname, 'ui/dist/index.html'));
 });
 
-app.listen(PORT, () => {
-  console.log(`Domain Horizon Server running on http://localhost:${PORT}`);
-  
+const serverInstance = app.listen(PORT, () => {
+  console.info(`Domain Horizon Server running on http://localhost:${PORT}`);
+
   // Safeguard: Keep-alive interval to prevent clean exits if the event loop goes empty in some environments
-  setInterval(() => {
+  const keepAliveInterval = setInterval(() => {
     // Just keeping the process alive
   }, 60000);
+
+  // Graceful shutdown handlers
+  const gracefulShutdown = () => {
+    console.info('\n[INFO] Graceful shutdown initiated...');
+    clearInterval(keepAliveInterval);
+
+    serverInstance.close(() => {
+      console.info('[INFO] Server closed. Exiting process.');
+      process.exit(0);
+    });
+
+    // Force exit after 5s if connections are keeping it alive
+    setTimeout(() => {
+      console.warn('[WARN] Could not close connections in time, forceful exit.');
+      process.exit(1);
+    }, 5000);
+  };
+
+  process.on('SIGINT', gracefulShutdown);
+  process.on('SIGTERM', gracefulShutdown);
 });

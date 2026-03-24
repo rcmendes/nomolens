@@ -7,7 +7,7 @@ const API_SECRET = process.env.GODADDY_API_SECRET;
 const isMockMode = !API_KEY || !API_SECRET;
 
 if (isMockMode) {
-  console.log('⚠️  No GoDaddy API credentials found in .env. Using MOCK mode.');
+  console.info('⚠️  No GoDaddy API credentials found in .env. Using MOCK mode.');
 }
 
 async function checkDomainAvailability(domain) {
@@ -17,22 +17,22 @@ async function checkDomainAvailability(domain) {
     if (domain.includes('example') || domain.includes('google')) {
       return { domain, available: false, definitive: true };
     }
-    
+
     // Math.random() < 0.5 means 50% chance of being available
     const isAvailable = Math.random() < 0.5;
-    return { 
-      domain, 
-      available: isAvailable, 
+    return {
+      domain,
+      available: isAvailable,
       price: isAvailable ? Math.floor(Math.random() * 20) * 1000000 + 1000000 : undefined, // Random price
       currency: 'USD',
-      definitive: true 
+      definitive: true
     };
   }
 
   try {
     const isDev = process.env.ENV_FILE === '.env.dev' || process.env.NODE_ENV === 'development';
     if (isDev) {
-      console.log(`[DEV] API Call (GoDaddy): GET /v1/domains/available (domain: ${domain})`);
+      console.info(`[DEV] API Call (GoDaddy): GET /v1/domains/available (domain: ${domain})`);
     }
     const response = await axios.get(`${GODADDY_API_URL}/v1/domains/available`, {
       params: { domain },
@@ -43,13 +43,13 @@ async function checkDomainAvailability(domain) {
     });
 
     if (isDev) {
-      console.log(`[DEV] API Response (GoDaddy): ${JSON.stringify(response.data)}`);
+      console.info(`[DEV] API Response (GoDaddy): ${JSON.stringify(response.data)}`);
     }
     return response.data;
   } catch (error) {
     const isDev = process.env.ENV_FILE === '.env.dev' || process.env.NODE_ENV === 'development';
     if (isDev && error.response) {
-      console.log(`[DEV] API Error Response (GoDaddy): ${JSON.stringify(error.response.data)}`);
+      console.info(`[DEV] API Error Response (GoDaddy): ${JSON.stringify(error.response.data)}`);
     }
     console.error(`Error checking domain ${domain}:`, error.response?.data?.message || error.message);
     return { domain, error: true };
@@ -64,7 +64,7 @@ async function checkDomainsBulk(domains) {
   try {
     const isDev = process.env.ENV_FILE === '.env.dev' || process.env.NODE_ENV === 'development';
     if (isDev) {
-      console.log(`[DEV] API Call (GoDaddy): POST /v1/domains/available (bulk: ${domains.length} domains)`);
+      console.info(`[DEV] API Call (GoDaddy): POST /v1/domains/available (bulk: ${domains.length} domains)`);
     }
     const response = await axios.post(`${GODADDY_API_URL}/v1/domains/available`, domains, {
       headers: {
@@ -75,13 +75,13 @@ async function checkDomainsBulk(domains) {
     });
 
     if (isDev) {
-      console.log(`[DEV] API Response (GoDaddy Bulk): ${JSON.stringify(response.data)}`);
+      console.info(`[DEV] API Response (GoDaddy Bulk): ${JSON.stringify(response.data)}`);
     }
     return response.data.domains || response.data;
   } catch (error) {
     const isDev = process.env.ENV_FILE === '.env.dev' || process.env.NODE_ENV === 'development';
     if (isDev && error.response) {
-      console.log(`[DEV] API Error Response (GoDaddy Bulk): ${JSON.stringify(error.response.data)}`);
+      console.info(`[DEV] API Error Response (GoDaddy Bulk): ${JSON.stringify(error.response.data)}`);
     }
     console.error(`Error in bulk check:`, error.response?.data?.message || error.message);
     // Fallback to individual checks if bulk fails or not supported for some reason

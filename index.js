@@ -58,30 +58,30 @@ program
     }
 
     if (finalDomainsToCheck.length === 0) {
-      console.log(chalk.yellow('No valid domains to check. Exiting.'));
+      console.info(chalk.yellow('No valid domains to check. Exiting.'));
       process.exit(0);
     }
 
-    console.log(chalk.blue(`\nChecking availability for ${finalDomainsToCheck.length} domains...\n`));
+    console.info(chalk.blue(`\nChecking availability for ${finalDomainsToCheck.length} domains...\n`));
 
     const results = await checkDomainsBulk(finalDomainsToCheck);
 
-    console.log(chalk.bold('\n--- Results ---\n'));
+    console.info(chalk.bold('\n--- Results ---\n'));
     let availableCount = 0;
 
     for (const res of results) {
       if (res.error) {
-        console.log(`${chalk.red('✖')} ${res.domain} - ${chalk.red('Error checking')}`);
+        console.info(`${chalk.red('✖')} ${res.domain} - ${chalk.red('Error checking')}`);
       } else if (res.available) {
         availableCount++;
         const priceStr = res.price ? ` ($${(res.price / 1000000).toFixed(2)})` : '';
-        console.log(`${chalk.green('✔')} ${chalk.bold(res.domain)}${priceStr} - ${chalk.green('AVAILABLE')}`);
+        console.info(`${chalk.green('✔')} ${chalk.bold(res.domain)}${priceStr} - ${chalk.green('AVAILABLE')}`);
       } else {
-        console.log(`${chalk.gray('✖')} ${chalk.gray(res.domain)} - ${chalk.yellow('TAKEN')}`);
+        console.info(`${chalk.gray('✖')} ${chalk.gray(res.domain)} - ${chalk.yellow('TAKEN')}`);
       }
     }
 
-    console.log(`\n${chalk.bold('Summary:')} ${availableCount} out of ${finalDomainsToCheck.length} available.\n`);
+    console.info(`\n${chalk.bold('Summary:')} ${availableCount} out of ${finalDomainsToCheck.length} available.\n`);
   });
 
 program.parse(process.argv);

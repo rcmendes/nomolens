@@ -29,7 +29,7 @@ async function generateDomainNames({ name, prefixes = [], suffixes = [], prompt 
 
   // Construct the prompt
   let systemInstruction = `You are a creative naming assistant that generates domain name ideas based on user input. \nYour output MUST be a valid JSON array of strings containing ONLY the domain names (e.g., ["name1.com", "name2.io"]). Do not include markdown formatting like \`\`\`json or any other text.`;
-  
+
   let userMessage = `Please generate up to 10 unique, catchy, and relevant domain name ideas.\n`;
   if (tlds && tlds.length > 0) {
     userMessage += `Crucially: You MUST include at least one domain idea for EVERY SINGLE TLD requested: ${tlds.join(', ')}.\n`;
@@ -38,15 +38,15 @@ async function generateDomainNames({ name, prefixes = [], suffixes = [], prompt 
     userMessage += `Crucially: ALWAYS include the exact plain name "${cleanName}" paired with the .com and .io TLDs as the very first items in the array, regardless of prefixes or suffixes.\n`;
   }
   userMessage += `Base Name: ${name}\n`;
-  
+
   if (prompt) {
     userMessage += `Product Context/Prompt: ${prompt}\n`;
   }
-  
+
   if (prefixes && prefixes.length > 0) {
     userMessage += `Consider these prefixes: ${prefixes.join(', ')}\n`;
   }
-  
+
   if (suffixes && suffixes.length > 0) {
     userMessage += `Consider these suffixes: ${suffixes.join(', ')}\n`;
   }
@@ -60,7 +60,7 @@ async function generateDomainNames({ name, prefixes = [], suffixes = [], prompt 
   try {
     const isDev = process.env.ENV_FILE === '.env.dev' || process.env.NODE_ENV === 'development';
     if (isDev) {
-      console.log(`[DEV] API Call (Gemini): generateContent (prompt: ${name})`);
+      console.info(`[DEV] API Call (Gemini): generateContent (prompt: ${name})`);
     }
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash',
@@ -77,7 +77,7 @@ async function generateDomainNames({ name, prefixes = [], suffixes = [], prompt 
     }
 
     if (isDev) {
-      console.log(`[DEV] API Response (Gemini): ${text}`);
+      console.info(`[DEV] API Response (Gemini): ${text}`);
     }
 
     // Clean up potential markdown formatting if the model disobeys
@@ -105,7 +105,7 @@ async function generateDomainNames({ name, prefixes = [], suffixes = [], prompt 
   } catch (error) {
     const isDev = process.env.ENV_FILE === '.env.dev' || process.env.NODE_ENV === 'development';
     if (isDev) {
-      console.log(`[DEV] API Error (Gemini): ${error.message}`);
+      console.info(`[DEV] API Error (Gemini): ${error.message}`);
     }
     console.error('Error generating domain names with Gemini:', error);
     throw error;
