@@ -1,9 +1,15 @@
 {
-  "name": "domain-checker",
+  "name": "domain-horizon",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
   "scripts": {
+    "start": "node server.js",
+    "server": "node server.js",
+    "ui:dev": "npm run dev --prefix ui",
+    "ui:prod": "npm run build --prefix ui -- --mode prod",
+    "dev": "ENV_FILE=.env.dev concurrently \"npm run server\" \"npm run ui:dev\"",
+    "prod": "npm run ui:prod && ENV_FILE=.env.prod npm run start",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -11,9 +17,16 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "@google/genai": "^1.46.0",
     "axios": "^1.13.6",
     "chalk": "^4.1.2",
     "commander": "^14.0.3",
-    "dotenv": "^17.3.1"
+    "cors": "^2.8.6",
+    "dotenv": "^17.3.1",
+    "express": "^5.2.1",
+    "whois-json": "^2.0.4"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
   }
 }

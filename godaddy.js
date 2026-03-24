@@ -1,4 +1,3 @@
-require('dotenv').config();
 const axios = require('axios');
 
 const GODADDY_API_URL = process.env.GODADDY_API_URL || 'https://api.ote-godaddy.com';
@@ -31,6 +30,10 @@ async function checkDomainAvailability(domain) {
   }
 
   try {
+    const isDev = process.env.ENV_FILE === '.env.dev' || process.env.NODE_ENV === 'development';
+    if (isDev) {
+      console.log(`[DEV] API Call (GoDaddy): GET /v1/domains/available (domain: ${domain})`);
+    }
     const response = await axios.get(`${GODADDY_API_URL}/v1/domains/available`, {
       params: { domain },
       headers: {
@@ -39,8 +42,15 @@ async function checkDomainAvailability(domain) {
       }
     });
 
+    if (isDev) {
+      console.log(`[DEV] API Response (GoDaddy): ${JSON.stringify(response.data)}`);
+    }
     return response.data;
   } catch (error) {
+    const isDev = process.env.ENV_FILE === '.env.dev' || process.env.NODE_ENV === 'development';
+    if (isDev && error.response) {
+      console.log(`[DEV] API Error Response (GoDaddy): ${JSON.stringify(error.response.data)}`);
+    }
     console.error(`Error checking domain ${domain}:`, error.response?.data?.message || error.message);
     return { domain, error: true };
   }
@@ -52,6 +62,10 @@ async function checkDomainsBulk(domains) {
   }
 
   try {
+    const isDev = process.env.ENV_FILE === '.env.dev' || process.env.NODE_ENV === 'development';
+    if (isDev) {
+      console.log(`[DEV] API Call (GoDaddy): POST /v1/domains/available (bulk: ${domains.length} domains)`);
+    }
     const response = await axios.post(`${GODADDY_API_URL}/v1/domains/available`, domains, {
       headers: {
         'Authorization': `sso-key ${API_KEY}:${API_SECRET}`,
@@ -60,10 +74,15 @@ async function checkDomainsBulk(domains) {
       }
     });
 
-    // GoDaddy bulk response might be { domains: [...] } or an array directly
-    // based on documentation, it's often an object with a 'domains' property
+    if (isDev) {
+      console.log(`[DEV] API Response (GoDaddy Bulk): ${JSON.stringify(response.data)}`);
+    }
     return response.data.domains || response.data;
   } catch (error) {
+    const isDev = process.env.ENV_FILE === '.env.dev' || process.env.NODE_ENV === 'development';
+    if (isDev && error.response) {
+      console.log(`[DEV] API Error Response (GoDaddy Bulk): ${JSON.stringify(error.response.data)}`);
+    }
     console.error(`Error in bulk check:`, error.response?.data?.message || error.message);
     // Fallback to individual checks if bulk fails or not supported for some reason
     const results = [];
