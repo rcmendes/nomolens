@@ -697,6 +697,12 @@ header p {
   border-color: var(--primary-hover);
 }
 
+.tld-chip.selected:hover:not(:disabled) {
+  background: var(--primary-hover);
+  color: white;
+  border-color: var(--primary-hover);
+}
+
 .tld-chip.custom {
   background: var(--secondary);
   border-color: #059669;
@@ -716,6 +722,12 @@ header p {
 .custom-tld-input input {
   flex: 1;
   padding: 0.5rem 1rem;
+}
+
+.tld-error-msg {
+  color: #f87171;
+  font-size: 0.8rem;
+  margin-top: 0.4rem;
 }
 
 .add-tld-btn {

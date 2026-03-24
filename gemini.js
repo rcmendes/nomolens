@@ -5,15 +5,24 @@ async function generateDomainNames({ name, prefixes = [], suffixes = [], prompt 
   const cleanName = name.toLowerCase().replace(/\s+/g, '');
   if (!apiKey) {
     console.warn('GEMINI_API_KEY is not defined in the environment. Returning mock data for UI testing.');
-    return [
-      `${cleanName}.com`,
-      `${cleanName}.io`,
-      `${cleanName}app.com`,
-      `get${cleanName}.io`,
-      `${cleanName}hq.net`,
-      `try${cleanName}.co`,
-      `my${cleanName}.ai`
+
+    // Honor selected TLDs; fall back to defaults if none selected
+    const activeTlds = (tlds && tlds.length > 0) ? tlds : ['.com', '.io', '.net'];
+
+    // One guaranteed domain per selected TLD
+    const perTldDomains = activeTlds.map(tld => `${cleanName}${tld}`);
+
+    // Creative variations using first two TLDs
+    const [firstTld = '.com', secondTld = '.io'] = activeTlds;
+    const creativeDomains = [
+      `${cleanName}app${firstTld}`,
+      `get${cleanName}${secondTld}`,
+      `${cleanName}hq${firstTld}`,
+      `try${cleanName}${secondTld}`,
+      `my${cleanName}${firstTld}`,
     ];
+
+    return [...new Set([...perTldDomains, ...creativeDomains])];
   }
 
   const ai = new GoogleGenAI({ apiKey });
@@ -43,7 +52,7 @@ async function generateDomainNames({ name, prefixes = [], suffixes = [], prompt 
   }
 
   if (tlds && tlds.length > 0) {
-    userMessage += `\nFocus primary generation on these TLDs: ${tlds.join(', ')}. Return ONLY the JSON array.`;
+    userMessage += `\nYou MUST ONLY use these exact TLDs: ${tlds.join(', ')}. Do NOT include any other TLDs. Every domain in your response must end with one of: ${tlds.join(', ')}. Return ONLY the JSON array.`;
   } else {
     userMessage += `\nInclude traditional TLDs like .com, .net, .io, .co, .ai depending on the context. Return ONLY the JSON array.`;
   }
@@ -75,6 +84,13 @@ async function generateDomainNames({ name, prefixes = [], suffixes = [], prompt 
     text = text.replace(/```json/g, '').replace(/```/g, '').trim();
 
     let parsedDomains = JSON.parse(text);
+
+    // Filter out any domains with non-selected TLDs
+    if (tlds && tlds.length > 0) {
+      parsedDomains = parsedDomains.filter(domain =>
+        tlds.some(tld => domain.endsWith(tld))
+      );
+    }
 
     // Guaranteed inclusion of all selected TLDs
     if (tlds && tlds.length > 0) {

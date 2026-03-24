@@ -17,6 +17,7 @@ function App() {
   const predefinedTLDs = ['.com', '.io', '.co', '.ai', '.net', '.org', '.app', '.dev', '.tech', '.me'];
   const [selectedTLDs, setSelectedTLDs] = useState(new Set(['.com']));
   const [customTLD, setCustomTLD] = useState('');
+  const [customTLDError, setCustomTLDError] = useState('');
   const [selectedDomains, setSelectedDomains] = useState(new Set());
   const [bulkVerifying, setBulkVerifying] = useState(false);
   const [bulkResults, setBulkResults] = useState({});
@@ -125,9 +126,21 @@ function App() {
   const handleAddCustomTLD = (e) => {
     e.preventDefault();
     if (!customTLD.trim()) return;
+
+    // Auto-fix: trim, lowercase, normalize leading dots to exactly one
     let tld = customTLD.trim().toLowerCase();
-    if (!tld.startsWith('.')) tld = '.' + tld;
-    
+    tld = '.' + tld.replace(/^\.+/, '');
+
+    // Validate: dot + 2+ letters, optionally repeated (covers .com, .co.uk)
+    const tldRegex = /^\.[a-z]{2,}(\.[a-z]{2,})*$/;
+    if (!tldRegex.test(tld)) {
+      setCustomTLDError(
+        'Invalid TLD. Must be 2+ letters (e.g. .xyz) or multi-part (e.g. .co.uk). Numbers and special characters are not allowed.'
+      );
+      return;
+    }
+
+    setCustomTLDError('');
     setSelectedTLDs(prev => {
       const newSet = new Set(prev);
       newSet.add(tld);
@@ -367,7 +380,10 @@ function App() {
                 type="text"
                 placeholder="Add custom (.xyz)"
                 value={customTLD}
-                onChange={(e) => setCustomTLD(e.target.value)}
+                onChange={(e) => {
+                  setCustomTLD(e.target.value);
+                  if (customTLDError) setCustomTLDError('');
+                }}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
                     e.preventDefault();
@@ -376,15 +392,20 @@ function App() {
                 }}
                 disabled={generating}
               />
-              <button 
-                type="button" 
+              <button
+                type="button"
                 className="add-tld-btn"
-                onClick={handleAddCustomTLD} 
+                onClick={handleAddCustomTLD}
                 disabled={generating || !customTLD.trim()}
               >
                 Add
               </button>
             </div>
+            {customTLDError && (
+              <p className="tld-error-msg" role="alert">
+                {customTLDError}
+              </p>
+            )}
           </div>
 
           <button type="submit" className="search-btn generate-btn" disabled={generating || !genName.trim()}>

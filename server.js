@@ -4,12 +4,37 @@ const path = require('path');
 const chalk = require('chalk');
 
 // Load environment variables based on ENV_FILE or default to .env
-const envPath = process.env.ENV_FILE ? path.resolve(__dirname, process.env.ENV_FILE) : path.resolve(__dirname, '.env');
+const envPath = process.env.ENV_FILE
+  ? path.resolve(__dirname, process.env.ENV_FILE)
+  : path.resolve(__dirname, '.env');
+
 const envResult = require('dotenv').config({ path: envPath });
 
-if (envResult.parsed) {
-  console.info(chalk.blue(`[INFO] Loaded environment variables from ${path.basename(envPath)}:`));
-  console.info(chalk.cyan(`       Keys: ${Object.keys(envResult.parsed).join(', ')}`));
+// Always report environment loading status regardless of mode
+if (process.env.ENV_FILE) {
+  if (envResult.error) {
+    console.warn(chalk.yellow(`[WARN] Could not load env file "${path.basename(envPath)}": ${envResult.error.message}`));
+  } else {
+    console.info(chalk.blue(`[INFO] Loaded environment file: ${path.basename(envPath)}`));
+    console.info(chalk.cyan(`       Keys from file: ${Object.keys(envResult.parsed).join(', ')}`));
+  }
+} else {
+  if (envResult.error) {
+    console.info(chalk.blue('[INFO] No .env file found. Using system environment variables.'));
+  } else {
+    console.info(chalk.blue('[INFO] Loaded default .env file.'));
+    console.info(chalk.cyan(`       Keys from file: ${Object.keys(envResult.parsed).join(', ')}`));
+  }
+}
+
+// Always log critical variable presence (never log actual values)
+const CRITICAL_VARS = ['GEMINI_API_KEY', 'GODADDY_API_KEY', 'GODADDY_API_SECRET'];
+for (const varName of CRITICAL_VARS) {
+  if (process.env[varName]) {
+    console.info(chalk.green(`       [OK] ${varName} is set`));
+  } else {
+    console.warn(chalk.yellow(`       [MISSING] ${varName} is not set`));
+  }
 }
 
 const { checkDomainAvailability } = require('./godaddy');
@@ -18,6 +43,10 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 const isDev = process.env.ENV_FILE === '.env.dev' || process.env.NODE_ENV === 'development';
+
+if (isDev) {
+  console.log(chalk.yellow('[DEV] Development mode active — verbose API logging enabled'));
+}
 
 if (isDev) {
   app.use((req, res, next) => {
