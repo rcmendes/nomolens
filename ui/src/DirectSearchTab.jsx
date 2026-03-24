@@ -12,7 +12,8 @@ export default function DirectSearchTab({
   selectedTLDs, toggleTLD,
   customTLD, setCustomTLD,
   customTLDError,
-  handleAddCustomTLD
+  handleAddCustomTLD,
+  favorites, addFavorite, removeFavorite, isFavorite,
 }) {
   return (
     <section className="mode-section glass" style={{ animation: 'none', opacity: 1 }}>
@@ -118,7 +119,12 @@ export default function DirectSearchTab({
       )}
 
       {Object.keys(bulkResults).length > 0 && (
-        <VerificationResultsSection bulkResults={bulkResults} />
+        <VerificationResultsSection
+          bulkResults={bulkResults}
+          isFavorite={isFavorite}
+          addFavorite={addFavorite}
+          removeFavorite={removeFavorite}
+        />
       )}
     </section>
   );

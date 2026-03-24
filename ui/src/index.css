@@ -49,14 +49,33 @@ body {
   overflow-x: hidden;
 }
 
+/* ── Page shell — wraps layout-wrapper and sets the background ── */
+.page-shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+/* ── Two-column layout ── */
+.layout-wrapper {
+  display: flex;
+  align-items: flex-start;
+  gap: 1.5rem;
+  padding: 4rem 2rem 4rem 2rem;
+  width: 100%;
+  max-width: 1300px;
+  margin: 0 auto;
+  flex: 1;
+}
+
+/* ── Main content column ── */
 .app-container {
+  flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 4rem 2rem;
-  width: 100%;
-  max-width: 900px;
-  margin: 0 auto;
 }
 
 header {
@@ -1200,6 +1219,201 @@ header p {
   .form-row { grid-template-columns: 1fr; }
   .mode-section { padding: 1.5rem; }
   .verify-action-container { flex-direction: column; align-items: flex-end; }
+  /* On small screens the favorites panel goes below main content */
+  .layout-wrapper { flex-direction: column; padding: 2rem 1rem; }
+  .favorites-panel {
+    width: 100%;
+    position: static;
+    top: auto;
+  }
+}
+
+/* ── Favorites Sidebar Panel ──────────────────────────────────────────────── */
+.favorites-panel {
+  width: 280px;
+  flex-shrink: 0;
+  position: sticky;
+  top: 4rem;
+  max-height: calc(100vh - 6rem);
+  overflow-y: auto;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  align-self: flex-start;
+  scrollbar-width: thin;
+  scrollbar-color: var(--glass-border) transparent;
+}
+
+.favorites-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--glass-border);
+}
+
+.favorites-panel-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-main);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.favorites-star-icon {
+  color: #f59e0b;
+  font-size: 1.1rem;
+}
+
+.favorites-count {
+  font-size: 0.75rem;
+  font-weight: 700;
+  background: var(--primary);
+  color: white;
+  padding: 0.15rem 0.55rem;
+  border-radius: 9999px;
+  min-width: 22px;
+  text-align: center;
+}
+
+.favorites-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 2rem 1rem;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.favorites-empty-icon {
+  font-size: 2rem;
+  opacity: 0.4;
+}
+
+.favorites-empty p {
+  font-size: 0.9rem;
+}
+
+.favorites-empty-hint {
+  font-size: 0.78rem !important;
+  opacity: 0.7;
+}
+
+.favorites-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 0;
+  margin: 0;
+}
+
+.favorites-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.65rem 0.9rem;
+  background: var(--card-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 10px;
+  transition: background 0.2s ease;
+  animation: scaleIn 0.2s ease-out forwards;
+}
+
+.favorites-item:hover {
+  background: var(--card-hover);
+}
+
+.favorites-item-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.favorites-item-domain {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-main);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.favorites-item-badge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 0.15rem 0.5rem;
+  border-radius: 9999px;
+  width: fit-content;
+}
+
+.fav-status-available     { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+.fav-status-taken         { background: rgba(239, 68, 68, 0.2);  color: #f87171; }
+.fav-status-expiring-soon { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
+.fav-status-unavailable   { background: rgba(100, 116, 139, 0.2); color: #94a3b8; }
+
+.favorites-item-price {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #34d399;
+}
+
+.favorites-remove-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 0.8rem;
+  padding: 0.2rem 0.4rem;
+  border-radius: 6px;
+  flex-shrink: 0;
+  transition: color 0.2s, background 0.2s;
+  line-height: 1;
+}
+
+.favorites-remove-btn:hover {
+  color: #f87171;
+  background: rgba(248, 113, 113, 0.1);
+}
+
+/* ── Star (favorite) toggle button on result cards ──────────────────────── */
+.fav-star-btn {
+  background: none;
+  border: 1px solid var(--glass-border);
+  color: var(--text-muted);
+  font-size: 1.2rem;
+  line-height: 1;
+  padding: 0.3rem 0.55rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.fav-star-btn:hover {
+  color: #f59e0b;
+  border-color: #f59e0b;
+  background: rgba(245, 158, 11, 0.1);
+  transform: scale(1.1);
+}
+
+.fav-star-btn.faved {
+  color: #f59e0b;
+  border-color: #f59e0b;
+  background: rgba(245, 158, 11, 0.12);
+}
+
+.fav-star-btn.faved:hover {
+  color: #ef4444;
+  border-color: #ef4444;
+  background: rgba(239, 68, 68, 0.1);
 }
 
 /* Accessibility: respect reduced-motion preference */

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import DirectSearchTab from './DirectSearchTab';
 import GeneratorTab from './GeneratorTab';
+import FavoritesPanel from './FavoritesPanel';
 
 const API_BASE = import.meta.env.DEV ? 'http://localhost:3001' : '';
 
@@ -32,6 +33,41 @@ function App() {
   const [bulkResults, setBulkResults] = useState({});
   const [bulkVerifying, setBulkVerifying] = useState(false);
   const [verifyProgress, setVerifyProgress] = useState(null);
+
+  // ── Favorites ─────────────────────────────────────────────────────────────
+  const FAV_KEY = 'domainHorizon_favorites';
+
+  const [favorites, setFavorites] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem(FAV_KEY) || '[]');
+    } catch {
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(FAV_KEY, JSON.stringify(favorites));
+    } catch (e) {
+      console.warn('Failed to persist favorites', e);
+    }
+  }, [favorites]);
+
+  const addFavorite = useCallback((domain, resultData) => {
+    setFavorites((prev) => {
+      if (prev.some((f) => f.domain === domain)) return prev;
+      return [{ domain, ...resultData }, ...prev];
+    });
+  }, []);
+
+  const removeFavorite = useCallback((domain) => {
+    setFavorites((prev) => prev.filter((f) => f.domain !== domain));
+  }, []);
+
+  const isFavorite = useCallback(
+    (domain) => favorites.some((f) => f.domain === domain),
+    [favorites]
+  );
 
   // ── Cache Helpers ──────────────────────────────────────────────────────────
   const CACHE_KEY = 'domainHorizon_cache';
@@ -306,75 +342,96 @@ function App() {
   };
 
   return (
-    <div className="app-container">
+    <div className="page-shell">
+      {/* ── Top-right controls ── */}
       <div className="header-actions">
         <button className="theme-toggle-btn" onClick={toggleTheme} title="Toggle Theme" aria-label="Toggle colour theme">
           {theme === 'dark' ? '☀️' : '🌙'}
         </button>
       </div>
 
-      <header>
-        <h1>Domain Horizon</h1>
-        <p>Discover the unseen details of your next great idea.</p>
-      </header>
+      {/* ── Main two-column wrapper ── */}
+      <div className="layout-wrapper">
+        {/* ── Left / centre: existing app ── */}
+        <div className="app-container">
+          <header>
+            <h1>Domain Horizon</h1>
+            <p>Discover the unseen details of your next great idea.</p>
+          </header>
 
-      <div className="tabs-container" role="tablist">
-        <button
-          role="tab"
-          aria-selected={activeTab === 'search'}
-          className={`tab-btn ${activeTab === 'search' ? 'active' : ''}`}
-          onClick={() => setActiveTab('search')}
-        >
-          Direct Search
-        </button>
-        <button
-          role="tab"
-          aria-selected={activeTab === 'generate'}
-          className={`tab-btn ${activeTab === 'generate' ? 'active' : ''}`}
-          onClick={() => setActiveTab('generate')}
-        >
-          Generate with AI
-        </button>
-      </div>
+          <div className="tabs-container" role="tablist">
+            <button
+              role="tab"
+              aria-selected={activeTab === 'search'}
+              className={`tab-btn ${activeTab === 'search' ? 'active' : ''}`}
+              onClick={() => setActiveTab('search')}
+            >
+              Direct Search
+            </button>
+            <button
+              role="tab"
+              aria-selected={activeTab === 'generate'}
+              className={`tab-btn ${activeTab === 'generate' ? 'active' : ''}`}
+              onClick={() => setActiveTab('generate')}
+            >
+              Generate with AI
+            </button>
+          </div>
 
-      {/* Tabs are always mounted—CSS display controls visibility—so state is preserved */}
-      <div style={{ display: activeTab === 'search' ? 'contents' : 'none' }}>
-        <DirectSearchTab
-          query={query}
-          setQuery={setQuery}
-          loading={loading}
-          bulkResults={bulkResults}
-          error={error}
-          onSearch={handleSearch}
-          onRetry={handleRetry}
-          selectedTLDs={selectedTLDs}
-          toggleTLD={toggleTLD}
-          customTLD={customTLD}
-          setCustomTLD={setCustomTLD}
-          customTLDError={customTLDError}
-          handleAddCustomTLD={handleAddCustomTLD}
-        />
-      </div>
+          {/* Tabs are always mounted—CSS display controls visibility—so state is preserved */}
+          <div style={{ display: activeTab === 'search' ? 'contents' : 'none' }}>
+            <DirectSearchTab
+              query={query}
+              setQuery={setQuery}
+              loading={loading}
+              bulkResults={bulkResults}
+              error={error}
+              onSearch={handleSearch}
+              onRetry={handleRetry}
+              selectedTLDs={selectedTLDs}
+              toggleTLD={toggleTLD}
+              customTLD={customTLD}
+              setCustomTLD={setCustomTLD}
+              customTLDError={customTLDError}
+              handleAddCustomTLD={handleAddCustomTLD}
+              favorites={favorites}
+              addFavorite={addFavorite}
+              removeFavorite={removeFavorite}
+              isFavorite={isFavorite}
+            />
+          </div>
 
-      <div style={{ display: activeTab === 'generate' ? 'contents' : 'none' }}>
-        <GeneratorTab
-          genName={genName} setGenName={setGenName}
-          genPrompt={genPrompt} setGenPrompt={setGenPrompt}
-          genPrefixes={genPrefixes} setGenPrefixes={setGenPrefixes}
-          genSuffixes={genSuffixes} setGenSuffixes={setGenSuffixes}
-          generating={generating}
-          generationResult={generationResult}
-          genError={genError}
-          selectedTLDs={selectedTLDs} toggleTLD={toggleTLD}
-          customTLD={customTLD} setCustomTLD={setCustomTLD}
-          customTLDError={customTLDError}
-          handleAddCustomTLD={handleAddCustomTLD}
-          selectedDomains={selectedDomains} toggleDomainSelection={toggleDomainSelection}
-          bulkVerifying={bulkVerifying}
-          bulkResults={bulkResults}
-          handleBulkVerify={handleBulkVerify}
-          verifyProgress={verifyProgress}
-          onGenerate={handleGenerate}
+          <div style={{ display: activeTab === 'generate' ? 'contents' : 'none' }}>
+            <GeneratorTab
+              genName={genName} setGenName={setGenName}
+              genPrompt={genPrompt} setGenPrompt={setGenPrompt}
+              genPrefixes={genPrefixes} setGenPrefixes={setGenPrefixes}
+              genSuffixes={genSuffixes} setGenSuffixes={setGenSuffixes}
+              generating={generating}
+              generationResult={generationResult}
+              genError={genError}
+              selectedTLDs={selectedTLDs} toggleTLD={toggleTLD}
+              customTLD={customTLD} setCustomTLD={setCustomTLD}
+              customTLDError={customTLDError}
+              handleAddCustomTLD={handleAddCustomTLD}
+              selectedDomains={selectedDomains} toggleDomainSelection={toggleDomainSelection}
+              bulkVerifying={bulkVerifying}
+              bulkResults={bulkResults}
+              handleBulkVerify={handleBulkVerify}
+              verifyProgress={verifyProgress}
+              onGenerate={handleGenerate}
+              favorites={favorites}
+              addFavorite={addFavorite}
+              removeFavorite={removeFavorite}
+              isFavorite={isFavorite}
+            />
+          </div>
+        </div>
+
+        {/* ── Right: always-visible favorites panel ── */}
+        <FavoritesPanel
+          favorites={favorites}
+          onRemove={removeFavorite}
         />
       </div>
     </div>

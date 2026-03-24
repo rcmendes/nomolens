@@ -24,8 +24,22 @@ function getEntryStatus(result) {
 /**
  * Displays a single domain's verification result card.
  */
-function VerificationCard({ domain, result }) {
+function VerificationCard({ domain, result, isFavorite, addFavorite, removeFavorite }) {
   const status = getEntryStatus(result);
+  const faved = isFavorite(domain);
+
+  const handleFavToggle = (e) => {
+    e.stopPropagation();
+    if (faved) {
+      removeFavorite(domain);
+    } else {
+      addFavorite(domain, {
+        status,
+        price: result.data?.price,
+        currency: result.data?.currency,
+      });
+    }
+  };
 
   return (
     <div className={`compact-result-card glass status-${status}`}>
@@ -83,6 +97,18 @@ function VerificationCard({ domain, result }) {
           )}
         </div>
 
+        {/* Favorite star */}
+        {!result.loading && !result.error && (
+          <button
+            className={`fav-star-btn ${faved ? 'faved' : ''}`}
+            onClick={handleFavToggle}
+            aria-label={faved ? `Remove ${domain} from favorites` : `Add ${domain} to favorites`}
+            title={faved ? 'Remove from favorites' : 'Add to favorites'}
+          >
+            {faved ? '★' : '☆'}
+          </button>
+        )}
+
         {!result.loading && !result.error && result.data?.available && result.data.price && (
           <div className="compact-right">
             <div className="compact-price-large">
@@ -99,7 +125,7 @@ function VerificationCard({ domain, result }) {
 /**
  * The full verification results section rendered below the tree.
  */
-export default function VerificationResultsSection({ bulkResults }) {
+export default function VerificationResultsSection({ bulkResults, isFavorite, addFavorite, removeFavorite }) {
   const entries = Object.entries(bulkResults);
   const [filterStatuses, setFilterStatuses] = useState(new Set(['available', 'expiring-soon', 'taken', 'unavailable']));
   const [filterDomains, setFilterDomains] = useState(new Set());
@@ -287,7 +313,14 @@ export default function VerificationResultsSection({ bulkResults }) {
       <div className="compact-results-list">
         {filteredAndSortedEntries.length > 0 ? (
           filteredAndSortedEntries.map(([domain, result]) => (
-            <VerificationCard key={domain} domain={domain} result={result} />
+            <VerificationCard
+              key={domain}
+              domain={domain}
+              result={result}
+              isFavorite={isFavorite}
+              addFavorite={addFavorite}
+              removeFavorite={removeFavorite}
+            />
           ))
         ) : (
           <p style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>

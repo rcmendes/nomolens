@@ -81,6 +81,7 @@ export default function GeneratorTab({
   handleBulkVerify,
   verifyProgress,
   onGenerate,
+  favorites, addFavorite, removeFavorite, isFavorite,
 }) {
   const hasResult = generationResult !== null;
 
@@ -299,7 +300,12 @@ export default function GeneratorTab({
             </div>
           )}
 
-          <VerificationResultsSection bulkResults={bulkResults} />
+          <VerificationResultsSection
+            bulkResults={bulkResults}
+            isFavorite={isFavorite}
+            addFavorite={addFavorite}
+            removeFavorite={removeFavorite}
+          />
         </div>
       )}
     </section>
