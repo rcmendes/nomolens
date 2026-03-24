@@ -149,51 +149,109 @@ function App() {
     });
   };
 
+  // ── Cache Helpers ──────────────────────────────────────────────────────────
+  const CACHE_KEY = 'domainHorizon_cache';
+
+  const getCachedResult = useCallback((domain) => {
+    try {
+      const cache = JSON.parse(localStorage.getItem(CACHE_KEY) || '{}');
+      const entry = cache[domain];
+      if (!entry) return null;
+
+      if (entry.expiresAt && new Date(entry.expiresAt) < new Date()) {
+        // Expired
+        return null;
+      }
+      return entry.data;
+    } catch (e) {
+      return null;
+    }
+  }, []);
+
+  const saveToCache = useCallback((domain, data) => {
+    // Only cache "taken" results. Available ones can change any second.
+    if (data.available || data.error) return;
+
+    try {
+      const cache = JSON.parse(localStorage.getItem(CACHE_KEY) || '{}');
+      
+      let expiresAt = null;
+      if (data.expirationDate) {
+        // Cache until 1 day before real expiration
+        const d = new Date(data.expirationDate);
+        d.setDate(d.getDate() - 1);
+        expiresAt = d.toISOString();
+      } else {
+        // Default 30 days if no expiration date provided by API
+        const d = new Date();
+        d.setDate(d.getDate() + 30);
+        expiresAt = d.toISOString();
+      }
+
+      cache[domain] = { data, expiresAt, cachedAt: new Date().toISOString() };
+      localStorage.setItem(CACHE_KEY, JSON.stringify(cache));
+    } catch (e) {
+      console.warn('Failed to save to localStorage cache', e);
+    }
+  }, []);
+
   const handleBulkVerify = async () => {
     if (selectedDomains.size === 0) return;
 
-    // Only verify domains that don't already have a completed result
-    const domainsToVerify = Array.from(selectedDomains).filter(
-      (d) => !bulkResults[d] || bulkResults[d].loading
-    );
-    if (domainsToVerify.length === 0) return;
+    const allSelected = Array.from(selectedDomains);
+    const resultsToUpdate = { ...bulkResults };
+    const domainsRequiringFetch = [];
 
+    // 1. Check cache first
+    for (const d of allSelected) {
+      const cached = getCachedResult(d);
+      if (cached) {
+        resultsToUpdate[d] = { loading: false, data: cached, error: null };
+      } else if (!bulkResults[d] || bulkResults[d].loading || bulkResults[d].error) {
+        // Not in cache and not already verified successfully
+        domainsRequiringFetch.push(d);
+        resultsToUpdate[d] = { loading: true };
+      }
+    }
+
+    if (domainsRequiringFetch.length === 0) {
+      setBulkResults(resultsToUpdate);
+      return;
+    }
+
+    setBulkResults(resultsToUpdate);
     setBulkVerifying(true);
-    setVerifyProgress({ done: 0, total: domainsToVerify.length });
+    setVerifyProgress({ done: 0, total: domainsRequiringFetch.length });
 
-    // Mark all as loading upfront
-    setBulkResults((prev) => {
-      const next = { ...prev };
-      for (const d of domainsToVerify) next[d] = { loading: true };
-      return next;
-    });
-
-    // Verify concurrently using Promise.allSettled
+    // 2. Verify uncached concurrently
     const settled = await Promise.allSettled(
-      domainsToVerify.map(async (d) => {
+      domainsRequiringFetch.map(async (d) => {
         const res = await fetch(`${API_BASE}/api/check?domain=${encodeURIComponent(d)}`);
         const data = await res.json();
         return { domain: d, data, ok: res.ok };
       })
     );
 
-    const next = { ...bulkResults };
+    const next = { ...resultsToUpdate };
     let done = 0;
     for (const outcome of settled) {
       done++;
       if (outcome.status === 'fulfilled') {
         const { domain, data, ok } = outcome.value;
-        next[domain] = { loading: false, data, error: !ok ? data.error || 'Error' : null };
+        const error = !ok ? data.error || 'Error' : null;
+        next[domain] = { loading: false, data, error };
+        
+        if (!error && !data.available) {
+          saveToCache(domain, data);
+        }
       } else {
-        // fulfilled === false means the fetch itself threw; find which domain it was
-        // We'll use index-based matching since allSettled preserves order
-        const domain = domainsToVerify[done - 1];
+        const domain = domainsRequiringFetch[done - 1];
         next[domain] = { loading: false, error: outcome.reason?.message || 'Network error' };
       }
     }
 
     setBulkResults(next);
-    setVerifyProgress({ done: domainsToVerify.length, total: domainsToVerify.length });
+    setVerifyProgress({ done: domainsRequiringFetch.length, total: domainsRequiringFetch.length });
     setBulkVerifying(false);
   };
 

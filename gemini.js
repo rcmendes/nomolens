@@ -32,12 +32,12 @@ async function generateBaseNames({ name, prefixes = [], suffixes = [], prompt = 
 
   const systemInstruction =
     `You are a creative naming assistant. ` +
-    `Your output MUST be a valid JSON array of exactly 10 strings. ` +
+    `Your output MUST be a valid JSON array of exactly 9 strings. ` +
     `Each string is a single-word (or short compound word) base domain name WITHOUT any TLD extension. ` +
-    `No dots, no spaces, no TLD suffixes. Example output: ["acme","getacme","acmehq","tryacme","acmeapp","acmely","acmeify","acmepro","theacme","acmehub"]. ` +
+    `No dots, no spaces, no TLD suffixes. Example output: ["acme","getacme","acmehq","tryacme","acmeapp","acmely","acmeify","acmepro","theacme"]. ` +
     `Do NOT include markdown code fences or any other text outside the JSON array.`;
 
-  let userMessage = `Generate exactly 10 unique, creative, and memorable base domain name ideas for the following input.\n`;
+  let userMessage = `Generate exactly 9 unique, creative, and memorable base domain name ideas for the following input.\n`;
   userMessage += `Base name: ${name}\n`;
 
   if (prompt) {
@@ -55,8 +55,8 @@ async function generateBaseNames({ name, prefixes = [], suffixes = [], prompt = 
     `- Use synonyms, wordplay, portmanteaus, or creative variations of the base name.\n` +
     `- Mix in some of the provided prefixes and suffixes where they fit naturally.\n` +
     `- All names must be lowercase alphanumeric only (hyphens allowed, no spaces).\n` +
-    `- Do NOT include the original base name verbatim as one of the 10 suggestions.\n` +
-    `- Return ONLY a JSON array of 10 strings.`;
+    `- Do NOT include the original base name verbatim as one of the 9 suggestions.\n` +
+    `- Return ONLY a JSON array of 9 strings.`;
 
   try {
     if (isDev) {
@@ -90,18 +90,18 @@ async function generateBaseNames({ name, prefixes = [], suffixes = [], prompt = 
       .map((d) => d.trim().toLowerCase().replace(/\.[a-z]{2,}(\.[a-z]{2,})*$/, ''))
       .filter((d) => d.length > 0 && d !== cleanName);
 
-    // Deduplicate and cap at 10
-    parsed = [...new Set(parsed)].slice(0, 10);
+    // Deduplicate and cap at 9
+    parsed = [...new Set(parsed)].slice(0, 9);
 
-    // Pad with fallbacks if Gemini returned fewer than 10
+    // Pad with fallbacks if Gemini returned fewer than 9
     const fallbacks = [`get${cleanName}`, `${cleanName}app`, `${cleanName}hq`, `try${cleanName}`, `my${cleanName}`,
       `${cleanName}hub`, `${cleanName}ly`, `${cleanName}ify`, `${cleanName}pro`, `the${cleanName}`];
     for (const fb of fallbacks) {
-      if (parsed.length >= 10) break;
+      if (parsed.length >= 9) break;
       if (!parsed.includes(fb) && fb !== cleanName) parsed.push(fb);
     }
 
-    return parsed.slice(0, 10);
+    return parsed.slice(0, 9);
   } catch (error) {
     if (isDev) console.error(`[DEV] Gemini error: ${error.message}`);
     console.error('Error generating base names with Gemini:', error);
