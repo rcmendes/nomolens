@@ -14,7 +14,7 @@ function App() {
   const [generating, setGenerating] = useState(false);
   const [generatedDomains, setGeneratedDomains] = useState([]);
   const [genError, setGenError] = useState(null);
-  const predefinedTLDs = ['.com', '.io', '.co', '.ai', '.net', '.org', '.app', '.dev', '.tech', '.me'];
+  const predefinedTLDs = ['.com', '.io', '.co', '.ai', '.net', '.org', '.app', '.dev', '.tech', '.me', '.pro'];
   const [selectedTLDs, setSelectedTLDs] = useState(new Set(['.com']));
   const [customTLD, setCustomTLD] = useState('');
   const [customTLDError, setCustomTLDError] = useState('');
