@@ -5,10 +5,10 @@ const { isDev } = require('./config');
  * Asks Gemini to generate 10 creative base names (no TLDs) derived from the
  * user's input using synonyms, prefix/suffix ideas, and wordplay.
  *
- * @param {{ name: string, prompt?: string, prefixes?: string[], suffixes?: string[] }} opts
+ * @param {{ name: string, prompt?: string, prefixes?: string[], suffixes?: string[], exclude?: string[] }} opts
  * @returns {Promise<string[]>} Array of up to 10 clean base name strings (no dots, no TLDs).
  */
-async function generateBaseNames({ name, prefixes = [], suffixes = [], prompt = '' }) {
+async function generateBaseNames({ name, prefixes = [], suffixes = [], prompt = '', exclude = [] }) {
   const apiKey = process.env.GEMINI_API_KEY;
   const cleanName = name.toLowerCase().replace(/\s+/g, '');
 
@@ -49,6 +49,9 @@ async function generateBaseNames({ name, prefixes = [], suffixes = [], prompt = 
   if (suffixes && suffixes.length > 0) {
     userMessage += `Consider using these suffixes: ${suffixes.join(', ')}\n`;
   }
+  if (exclude && exclude.length > 0) {
+    userMessage += `\nCRITICAL: Do NOT suggest any names that are contained in this blocklist of already taken/cached domains: ${exclude.slice(0, 50).join(', ')}\n`;
+  }
 
   userMessage +=
     `\nRules:\n` +
@@ -84,18 +87,21 @@ async function generateBaseNames({ name, prefixes = [], suffixes = [], prompt = 
 
     if (!Array.isArray(parsed)) throw new Error('Gemini returned non-array JSON');
 
+    // Extract base names from exclude list for better filtering
+    const excludedBaseNames = exclude.map(d => d.split('.')[0].toLowerCase());
+
     // Sanitise: keep only non-empty strings, strip any accidental TLD suffixes
     parsed = parsed
       .filter((d) => typeof d === 'string' && d.trim().length > 0)
       .map((d) => d.trim().toLowerCase().replace(/\.[a-z]{2,}(\.[a-z]{2,})*$/, ''))
-      .filter((d) => d.length > 0 && d !== cleanName);
+      .filter((d) => d.length > 0 && d !== cleanName && !excludedBaseNames.includes(d));
 
     // Deduplicate and cap at 9
     parsed = [...new Set(parsed)].slice(0, 9);
 
     // Pad with fallbacks if Gemini returned fewer than 9
     const fallbacks = [`get${cleanName}`, `${cleanName}app`, `${cleanName}hq`, `try${cleanName}`, `my${cleanName}`,
-      `${cleanName}hub`, `${cleanName}ly`, `${cleanName}ify`, `${cleanName}pro`, `the${cleanName}`];
+    `${cleanName}hub`, `${cleanName}ly`, `${cleanName}ify`, `${cleanName}pro`, `the${cleanName}`];
     for (const fb of fallbacks) {
       if (parsed.length >= 9) break;
       if (!parsed.includes(fb) && fb !== cleanName) parsed.push(fb);

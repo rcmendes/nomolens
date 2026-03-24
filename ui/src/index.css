@@ -675,6 +675,14 @@ header p {
   background: rgba(245, 158, 11, 0.1);
 }
 
+.compact-result-card.status-unavailable {
+  background: rgba(100, 116, 139, 0.08);
+  border-color: rgba(100, 116, 139, 0.4);
+}
+[data-theme="light"] .compact-result-card.status-unavailable {
+  background: rgba(100, 116, 139, 0.1);
+}
+
 .compact-card-content {
   display: flex;
   justify-content: space-between;
@@ -720,6 +728,7 @@ header p {
 .compact-badge.checking { background: rgba(255, 255, 255, 0.1); color: var(--text-muted); }
 .compact-badge.available { background: #10B981; color: white; }
 .compact-badge.taken { background: #EF4444; color: white; }
+.compact-badge.unavailable { background: #64748b; color: white; }
 .compact-badge.error { background: #F59E0B; color: white; }
 .compact-badge.soon { background: #F59E0B; color: white; }
 
@@ -1058,6 +1067,12 @@ header p {
   background: rgba(239, 68, 68, 0.2);
   color: #f87171;
   border-color: rgba(248, 113, 113, 0.4);
+}
+
+.status-pill.active.unavailable {
+  background: rgba(100, 116, 139, 0.2);
+  color: #cbd5e1;
+  border-color: rgba(148, 163, 184, 0.4);
 }
 
 /* Domain Multi-select */

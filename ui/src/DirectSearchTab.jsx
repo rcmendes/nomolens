@@ -1,31 +1,106 @@
 import React from 'react';
+import VerificationResultsSection from './VerificationResultsSection';
 
-/**
- * Direct domain search tab.
- * Props: query, setQuery, loading, result, error, onSearch, onRetry
- */
-export default function DirectSearchTab({ query, setQuery, loading, result, error, onSearch, onRetry }) {
+const PREDEFINED_TLDS = ['.com', '.io', '.co', '.ai', '.net', '.org', '.app', '.dev', '.tech', '.me', '.pro'];
+
+export default function DirectSearchTab({
+  query, setQuery,
+  loading,
+  bulkResults,
+  error,
+  onSearch, onRetry,
+  selectedTLDs, toggleTLD,
+  customTLD, setCustomTLD,
+  customTLDError,
+  handleAddCustomTLD
+}) {
   return (
     <section className="mode-section glass" style={{ animation: 'none', opacity: 1 }}>
       <h2 className="sr-only">Direct Search</h2>
 
-      <form className="search-container" onSubmit={onSearch}>
-        <input
-          type="text"
-          className="search-input"
-          placeholder="e.g. spacex.com"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          disabled={loading}
-          aria-label="Domain name to search"
-        />
-        <button type="submit" className="search-btn" disabled={loading || !query.trim()}>
-          {loading ? 'Searching…' : 'Search'}
+      <p style={{ marginBottom: '1.5rem', color: 'var(--text-muted)', textAlign: 'center' }}>
+        Check availability across multiple TLDs at once.
+      </p>
+
+      <form className="generator-form" onSubmit={onSearch}>
+        <div className="form-group">
+          <label htmlFor="search-input">Domain Name</label>
+          <input
+            id="search-input"
+            type="text"
+            className="search-input"
+            placeholder="e.g. spacex"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            disabled={loading}
+            aria-label="Domain name to search"
+            style={{ paddingRight: '2rem' }}
+            required
+          />
+        </div>
+
+        <div className="form-group tld-section" style={{ marginTop: '0.5rem' }}>
+          <label>Target TLDs</label>
+          <div className="tld-chips">
+            {PREDEFINED_TLDS.map((tld) => (
+              <button
+                key={tld}
+                type="button"
+                className={`tld-chip ${selectedTLDs.has(tld) ? 'selected' : ''}`}
+                onClick={() => toggleTLD(tld)}
+                disabled={loading}
+              >
+                {tld}
+              </button>
+            ))}
+            {Array.from(selectedTLDs)
+              .filter((tld) => !PREDEFINED_TLDS.includes(tld))
+              .map((tld) => (
+                <button
+                  key={tld}
+                  type="button"
+                  className="tld-chip selected custom"
+                  onClick={() => toggleTLD(tld)}
+                  disabled={loading}
+                  title="Remove custom TLD"
+                >
+                  {tld} &times;
+                </button>
+              ))}
+          </div>
+          <div className="custom-tld-input">
+            <input
+              type="text"
+              placeholder="Add custom (.xyz)"
+              value={customTLD}
+              onChange={(e) => setCustomTLD(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') { e.preventDefault(); handleAddCustomTLD(e); }
+              }}
+              disabled={loading}
+              aria-label="Custom TLD input"
+            />
+            <button
+              type="button"
+              className="add-tld-btn"
+              onClick={handleAddCustomTLD}
+              disabled={loading || !customTLD.trim()}
+            >
+              Add
+            </button>
+          </div>
+          {customTLDError && (
+            <p className="tld-error-msg" role="alert">{customTLDError}</p>
+          )}
+        </div>
+
+        <button type="submit" className="search-btn generate-btn" disabled={loading || !query.trim()}>
+          {loading ? 'Searching…' : 'Search All Variants'}
         </button>
       </form>
 
       {error && (
-        <div className="error-msg" role="alert">
+        <div className="error-msg" role="alert" style={{ marginTop: '1.5rem' }}>
           <span>{error}</span>
           {onRetry && (
             <button className="retry-btn" onClick={onRetry} type="button">
@@ -42,54 +117,8 @@ export default function DirectSearchTab({ query, setQuery, loading, result, erro
         </div>
       )}
 
-      {result && !loading && (
-        <div className="result-card glass">
-          <div
-            className={`status-badge ${
-              result.error ? 'status-error' : result.available ? 'status-available' : 'status-taken'
-            }`}
-          >
-            {result.error ? 'Error' : result.available ? 'Available' : 'Taken'}
-          </div>
-
-          <h2 className="domain-title">{result.domain}</h2>
-
-          {result.available && result.price && (
-            <div className="domain-price">
-              {result.currency === 'USD' ? '$' : result.currency + ' '}
-              {result.price}
-            </div>
-          )}
-
-          {!result.available && !result.error && (
-            <div className="info-grid">
-              <div className="info-item">
-                <span className="info-label">Current Owner</span>
-                <span className="info-value">{result.owner || 'Unknown'}</span>
-              </div>
-              <div className="info-item">
-                <span className="info-label">Purchased On</span>
-                <span className="info-value">{result.purchasedDate?.split('T')[0] || 'Unknown'}</span>
-              </div>
-              <div className="info-item">
-                <span className="info-label">Expires On</span>
-                <span className="info-value">{result.expirationDate?.split('T')[0] || 'Unknown'}</span>
-              </div>
-            </div>
-          )}
-
-          {result.restrictions && (
-            <div className="restrictions-box">
-              <h3>Requirements &amp; Restrictions</h3>
-              <p>
-                <strong>Usage: </strong> {result.restrictions.description}
-              </p>
-              <p>
-                <strong>Country/Region: </strong> {result.restrictions.countryRestriction}
-              </p>
-            </div>
-          )}
-        </div>
+      {Object.keys(bulkResults).length > 0 && (
+        <VerificationResultsSection bulkResults={bulkResults} />
       )}
     </section>
   );

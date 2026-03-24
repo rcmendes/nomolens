@@ -152,10 +152,10 @@ async function getDomainInfo(domainName) {
       countryRestriction: 'None',
     };
 
-    return { owner, purchasedDate, expirationDate, restrictions };
+    return { owner, purchasedDate, expirationDate, restrictions, whoisError: false };
   } catch (error) {
     console.error('WHOIS lookup failed for', domainName, error.message);
-    return UNKNOWN_RESULT;
+    return { ...UNKNOWN_RESULT, whoisError: true };
   }
 }
 

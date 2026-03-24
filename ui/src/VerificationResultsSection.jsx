@@ -9,7 +9,7 @@ function getEntryStatus(result) {
   if (result.data?.available) return 'available';
 
   // Check if expiring soon (within 30 days)
-  if (result.data?.expirationDate) {
+  if (result.data?.expirationDate && result.data.expirationDate !== 'Unknown') {
     const expiry = new Date(result.data.expirationDate);
     const now = new Date();
     const diffTime = expiry - now;
@@ -17,6 +17,7 @@ function getEntryStatus(result) {
     if (diffDays <= 30 && diffDays > 0) return 'expiring-soon';
   }
 
+  if (result.data?.whoisError) return 'unavailable';
   return 'taken';
 }
 
@@ -37,6 +38,7 @@ function VerificationCard({ domain, result }) {
               {status === 'error' && <span className="compact-badge error">Error</span>}
               {status === 'available' && <span className="compact-badge available">Available</span>}
               {status === 'taken' && <span className="compact-badge taken">Taken</span>}
+              {status === 'unavailable' && <span className="compact-badge unavailable">Unavailable</span>}
               {status === 'expiring-soon' && (
                 <>
                   <span className="compact-badge taken">Taken</span>
@@ -99,7 +101,7 @@ function VerificationCard({ domain, result }) {
  */
 export default function VerificationResultsSection({ bulkResults }) {
   const entries = Object.entries(bulkResults);
-  const [filterStatuses, setFilterStatuses] = useState(new Set(['available', 'expiring-soon', 'taken']));
+  const [filterStatuses, setFilterStatuses] = useState(new Set(['available', 'expiring-soon', 'taken', 'unavailable']));
   const [filterDomains, setFilterDomains] = useState(new Set());
   const [sortKey, setSortKey] = useState('name'); // 'name', 'price', 'tld'
   const [sortDir, setSortDir] = useState('asc');
@@ -218,6 +220,12 @@ export default function VerificationResultsSection({ bulkResults }) {
               onClick={() => toggleStatusFilter('taken')}
             >
               Taken
+            </button>
+            <button 
+              className={`status-pill unavailable ${filterStatuses.has('unavailable') ? 'active' : ''}`}
+              onClick={() => toggleStatusFilter('unavailable')}
+            >
+              Unavailable
             </button>
           </div>
         </div>

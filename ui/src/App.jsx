@@ -20,33 +20,129 @@ function App() {
 
   const toggleTheme = () => setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
 
-  // ── Direct Search State ────────────────────────────────────────────────────
+  // ── Shared Domain State ───────────────────────────────────────────────────
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
+  
+  const [selectedTLDs, setSelectedTLDs] = useState(new Set(['.com']));
+  const [customTLD, setCustomTLD] = useState('');
+  const [customTLDError, setCustomTLDError] = useState('');
+  
+  const [bulkResults, setBulkResults] = useState({});
+  const [bulkVerifying, setBulkVerifying] = useState(false);
+  const [verifyProgress, setVerifyProgress] = useState(null);
+
+  // ── Cache Helpers ──────────────────────────────────────────────────────────
+  const CACHE_KEY = 'domainHorizon_cache';
+
+  const getCachedResult = useCallback((domain) => {
+    try {
+      const cache = JSON.parse(localStorage.getItem(CACHE_KEY) || '{}');
+      const entry = cache[domain];
+      if (!entry) return null;
+
+      if (entry.expiresAt && new Date(entry.expiresAt) < new Date()) {
+        // Expired
+        return null;
+      }
+      return entry.data;
+    } catch (e) {
+      return null;
+    }
+  }, []);
+
+  const saveToCache = useCallback((domain, data) => {
+    // Only cache "taken" results. Available ones can change any second.
+    if (data.available || data.error) return;
+
+    try {
+      const cache = JSON.parse(localStorage.getItem(CACHE_KEY) || '{}');
+      
+      let expiresAt = null;
+      if (data.expirationDate) {
+        // Cache until 1 day before real expiration
+        const d = new Date(data.expirationDate);
+        d.setDate(d.getDate() - 1);
+        expiresAt = d.toISOString();
+      } else {
+        // Default 30 days if no expiration date provided by API
+        const d = new Date();
+        d.setDate(d.getDate() + 30);
+        expiresAt = d.toISOString();
+      }
+
+      cache[domain] = { data, expiresAt, cachedAt: new Date().toISOString() };
+      localStorage.setItem(CACHE_KEY, JSON.stringify(cache));
+    } catch (e) {
+      console.warn('Failed to save to localStorage cache', e);
+    }
+  }, []);
 
   const doSearch = useCallback(async (domainQuery) => {
-    let domainToSearch = domainQuery.trim().toLowerCase();
-    domainToSearch = domainToSearch.replace(/^https?:\/\//, '').split('/')[0];
+    let base = domainQuery.trim().toLowerCase();
+    base = base.replace(/^https?:\/\//, '').split('/')[0];
+    // remove existing TLD if present for bulk expansion
+    if (base.includes('.')) {
+      base = base.split('.')[0];
+    }
+
+    if (!base) return;
 
     setLoading(true);
     setError(null);
-    setResult(null);
+    setBulkResults({}); // Clear previous results
+    
+    const domainsToVerify = Array.from(selectedTLDs).map(tld => `${base}${tld}`);
+    
+    // We reuse the bulk verification logic but for a smaller set or direct search
+    setBulkVerifying(true);
+    setVerifyProgress({ done: 0, total: domainsToVerify.length });
 
-    try {
-      const res = await fetch(
-        `${API_BASE}/api/check?domain=${encodeURIComponent(domainToSearch)}`
-      );
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to check domain');
-      setResult(data);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
+    const resultsToUpdate = {};
+    const domainsRequiringFetch = [];
+
+    for (const d of domainsToVerify) {
+      const cached = getCachedResult(d);
+      if (cached) {
+        resultsToUpdate[d] = { loading: false, data: cached, error: null };
+      } else {
+        domainsRequiringFetch.push(d);
+        resultsToUpdate[d] = { loading: true };
+      }
     }
-  }, []);
+    setBulkResults(resultsToUpdate);
+
+    if (domainsRequiringFetch.length > 0) {
+      const settled = await Promise.allSettled(
+        domainsRequiringFetch.map(async (d) => {
+          const res = await fetch(`${API_BASE}/api/check?domain=${encodeURIComponent(d)}`);
+          const data = await res.json();
+          return { domain: d, data, ok: res.ok };
+        })
+      );
+
+      const next = { ...resultsToUpdate };
+      let done = 0;
+      for (const outcome of settled) {
+        done++;
+        if (outcome.status === 'fulfilled') {
+          const { domain, data, ok } = outcome.value;
+          const err = !ok ? data.error || 'Error' : null;
+          next[domain] = { loading: false, data, err };
+          if (!err && !data.available) saveToCache(domain, data);
+        } else {
+          const domain = domainsRequiringFetch[done - 1];
+          next[domain] = { loading: false, error: outcome.reason?.message || 'Network error' };
+        }
+      }
+      setBulkResults(next);
+    }
+
+    setVerifyProgress({ done: domainsToVerify.length, total: domainsToVerify.length });
+    setBulkVerifying(false);
+    setLoading(false);
+  }, [selectedTLDs, getCachedResult, saveToCache]);
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -66,13 +162,7 @@ function App() {
   const [generating, setGenerating] = useState(false);
   const [generationResult, setGenerationResult] = useState(null); // { original, suggestions }
   const [genError, setGenError] = useState(null);
-  const [selectedTLDs, setSelectedTLDs] = useState(new Set(['.com']));
-  const [customTLD, setCustomTLD] = useState('');
-  const [customTLDError, setCustomTLDError] = useState('');
   const [selectedDomains, setSelectedDomains] = useState(new Set());
-  const [bulkVerifying, setBulkVerifying] = useState(false);
-  const [bulkResults, setBulkResults] = useState({});
-  const [verifyProgress, setVerifyProgress] = useState(null);
 
   const handleGenerate = async (e) => {
     e.preventDefault();
@@ -86,6 +176,10 @@ function App() {
     setVerifyProgress(null);
 
     try {
+      // Get all domain names from cache to exclude
+      const cache = JSON.parse(localStorage.getItem(CACHE_KEY) || '{}');
+      const exclude = Object.keys(cache);
+
       const res = await fetch(`${API_BASE}/api/generate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -95,6 +189,7 @@ function App() {
           prefixes: genPrefixes.split(',').map((p) => p.trim()).filter(Boolean),
           suffixes: genSuffixes.split(',').map((s) => s.trim()).filter(Boolean),
           tlds: Array.from(selectedTLDs),
+          exclude: exclude,
         }),
       });
       const data = await res.json();
@@ -149,51 +244,6 @@ function App() {
     });
   };
 
-  // ── Cache Helpers ──────────────────────────────────────────────────────────
-  const CACHE_KEY = 'domainHorizon_cache';
-
-  const getCachedResult = useCallback((domain) => {
-    try {
-      const cache = JSON.parse(localStorage.getItem(CACHE_KEY) || '{}');
-      const entry = cache[domain];
-      if (!entry) return null;
-
-      if (entry.expiresAt && new Date(entry.expiresAt) < new Date()) {
-        // Expired
-        return null;
-      }
-      return entry.data;
-    } catch (e) {
-      return null;
-    }
-  }, []);
-
-  const saveToCache = useCallback((domain, data) => {
-    // Only cache "taken" results. Available ones can change any second.
-    if (data.available || data.error) return;
-
-    try {
-      const cache = JSON.parse(localStorage.getItem(CACHE_KEY) || '{}');
-      
-      let expiresAt = null;
-      if (data.expirationDate) {
-        // Cache until 1 day before real expiration
-        const d = new Date(data.expirationDate);
-        d.setDate(d.getDate() - 1);
-        expiresAt = d.toISOString();
-      } else {
-        // Default 30 days if no expiration date provided by API
-        const d = new Date();
-        d.setDate(d.getDate() + 30);
-        expiresAt = d.toISOString();
-      }
-
-      cache[domain] = { data, expiresAt, cachedAt: new Date().toISOString() };
-      localStorage.setItem(CACHE_KEY, JSON.stringify(cache));
-    } catch (e) {
-      console.warn('Failed to save to localStorage cache', e);
-    }
-  }, []);
 
   const handleBulkVerify = async () => {
     if (selectedDomains.size === 0) return;
@@ -293,10 +343,16 @@ function App() {
           query={query}
           setQuery={setQuery}
           loading={loading}
-          result={result}
+          bulkResults={bulkResults}
           error={error}
           onSearch={handleSearch}
           onRetry={handleRetry}
+          selectedTLDs={selectedTLDs}
+          toggleTLD={toggleTLD}
+          customTLD={customTLD}
+          setCustomTLD={setCustomTLD}
+          customTLDError={customTLDError}
+          handleAddCustomTLD={handleAddCustomTLD}
         />
       </div>
 

@@ -124,11 +124,19 @@ app.get('/api/check', apiLimiter, async (req, res) => {
   }
 
   try {
-    // Run availability + WHOIS concurrently (was sequential before)
-    const [availResult, extInfo] = await Promise.all([
+    // Run availability + WHOIS concurrently, but use allSettled for resilience
+    const results = await Promise.allSettled([
       checkDomainAvailability(domainName),
       getDomainInfo(domainName),
     ]);
+
+    const availResult = results[0].status === 'fulfilled' 
+      ? results[0].value 
+      : { domain: domainName, error: true };
+    
+    const extInfo = results[1].status === 'fulfilled' 
+      ? results[1].value 
+      : { owner: 'Unknown', purchasedDate: 'Unknown', expirationDate: 'Unknown', restrictions: { description: 'Whois lookup failed', countryRestriction: 'Unknown' }, whoisError: true };
 
     const responseData = {
       domain: domainName,
@@ -140,6 +148,7 @@ app.get('/api/check', apiLimiter, async (req, res) => {
       expirationDate: extInfo.expirationDate,
       restrictions: extInfo.restrictions,
       error: availResult.error || false,
+      whoisError: extInfo.whoisError || false,
     };
 
     // Cache only successful (non-error) responses
@@ -157,7 +166,7 @@ app.get('/api/check', apiLimiter, async (req, res) => {
 // ── Name-generation endpoint ─────────────────────────────────────────────────
 app.post('/api/generate', apiLimiter, async (req, res) => {
   try {
-    const { name, prefixes, suffixes, prompt, tlds } = req.body;
+    const { name, prefixes, suffixes, prompt, tlds, exclude } = req.body;
 
     if (!name || typeof name !== 'string') {
       return res.status(400).json({ error: 'Base name is required and must be a string' });
@@ -180,7 +189,7 @@ app.post('/api/generate', apiLimiter, async (req, res) => {
     const activeTlds = (tlds && tlds.length > 0) ? tlds : ['.com', '.io', '.net'];
 
     // Step 1 – ask Gemini for 10 creative base names (no TLDs)
-    const baseSuggestions = await generateBaseNames({ name: cleanName, prefixes, suffixes, prompt });
+    const baseSuggestions = await generateBaseNames({ name: cleanName, prefixes, suffixes, prompt, exclude });
 
     // Step 2 – apply TLDs server-side to keep control over the structure
     const original = {

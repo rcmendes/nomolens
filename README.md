@@ -1,92 +1,127 @@
-# Domain Horizon
+# 🌅 Domain Horizon
 
-Check comprehensive information about domains, including availability status, price, current owner, purchased date, expiration date, and use/country restrictions. This project now features a shiny, modern web UI alongside its Node.js API and CLI tool.
+**Domain Horizon** is a premium, all-in-one domain intelligence platform. Whether you're brainstorming the next big startup name with AI or deeply auditing an existing domain's ownership and restrictions, Domain Horizon provides a sleek, glassmorphism-inspired interface to get the job done.
 
-## Features
+Built with **Node.js**, **React**, and **Google Gemini AI**, it bridges the gap between raw WHOIS data and creative brand development.
 
-- **Domain Availability**: Check if a domain is available for registration via the GoDaddy API.
-- **Detailed Domain Information**: Fetch extended WHOIS information, including:
-  - Current Owner (or Privacy status)
-  - Purchased Date
-  - Expiration Date
-- **Price Estimation**: Get an estimated price for domain registration or transfer.
-- **Usage & Country Restrictions**: Automatically identifies use restrictions or special country requirements based on the Top-Level Domain (TLD) (e.g., `.us`, `.uk`, `.edu`, `.bank`).
-- **Modern Web UI**: A beautiful glassmorphism-themed React application.
+---
 
-## Installation
+## ✨ Key Features
 
-1. Clone the repository:
-   ```bash
-   git clone <repository-url>
-   cd domain-horizon
-   ```
+### 🔍 Direct Domain Search
+Get instant, comprehensive data on any domain:
+- **Real-time Availability**: Checks status via GoDaddy's API.
+- **Accurate Pricing**: Live registration and transfer price estimates.
+- **Deep WHOIS Insights**: Fetches owner details, registration dates, and expiration timelines.
+- **TLD Guardrails**: Automatically identifies registration restrictions for specialized TLDs (e.g., `.us`, `.edu`, `.bank`).
 
-2. Install backend dependencies:
-   ```bash
-   npm install
-   ```
+### 🤖 AI-Powered Name Generation
+Stuck on a name? Let Gemini do the heavy lifting:
+- **Contextual Brainstorming**: Provide a product description, and the AI generates relevant, creative base names.
+- **Smart Modifiers**: Add custom prefixes and suffixes (e.g., "get", "app", "hq") to your ideas.
+- **Multi-TLD Expansion**: Automatically apply your favorite TLDs to every AI suggestion.
+- **Interactive Tree View**: Explore suggestions in a hierarchical structure and bulk-verify availability with one click.
 
-3. Install frontend dependencies:
-   ```bash
-   cd ui
-   npm install
-   cd ..
-   ```
+### 📊 Advanced Results Dashboard
+Manage your findings with powerful UI tools:
+- **Status Filtering**: Quickly toggle between *Free*, *Taken*, and *Expiring Soon* domains.
+- **Multi-Select Filtering**: Focus on specific name variants by filtering the results list.
+- **Flexible Sorting**: Order results by Name, Price, or TLD extension.
+- **Persistent Cache**: Remembers verified domains to save API credits and time.
 
-## Configuration
+---
 
-Create a `.env` file in the project root containing your API credentials:
+## 🛠 Tech Stack
 
-```env
-# GoDaddy API keys
-GODADDY_API_KEY=your_api_key
-GODADDY_API_SECRET=your_api_secret
+- **Frontend**: React 18, Vite, Framer Motion (Animations), Glassmorphism CSS.
+- **Backend**: Node.js, Express.
+- **AI Engine**: Google Gemini (via `@google/genai`).
+- **Data Providers**: GoDaddy API, WHOIS Protocol.
+- **Security**: Helmet, Express Rate Limit, CORS.
+- **Performance**: Server-side caching with `node-cache`.
 
-# Note: Without valid GoDaddy credentials, the tool will run in MOCK mode.
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
+- [Node.js](https://nodejs.org/) (v18 or higher recommended)
+- API Keys for GoDaddy and Google Gemini.
+
+### 1. Installation
+Clone the repository and install dependencies for both the server and the UI:
+
+```bash
+git clone https://github.com/rcmendes/domain-checker.git
+cd domain-horizon
+
+# Install Backend Dependencies
+npm install
+
+# Install Frontend Dependencies
+cd ui && npm install && cd ..
 ```
 
-## Usage
+### 2. Configuration
+Create a `.env.dev` (for local work) or `.env.prod` file in the root directory. Use `.env.example` as a template:
 
-### Modern Web UI (Recommended)
+```env
+# GoDaddy API
+GODADDY_API_KEY=your_key_here
+GODADDY_API_SECRET=your_secret_here
 
-Start both the backend API server and the frontend UI concurrently from the project root:
+# Gemini AI
+GEMINI_API_KEY=your_gemini_key_here
+```
 
+### 3. Running the App
+
+**Development Mode** (Runs backend & frontend concurrently with hot-reload):
 ```bash
 npm run dev
 ```
+Open [http://localhost:5173](http://localhost:5173) in your browser.
 
-Then, open your browser to `http://localhost:5173` to interact with the new web UI!
-
-If you prefer to run them separately:
-- **Backend only**: `npm run server`
-- **Frontend only**: `npm run ui`
-
-### Command Line Interface
-
-You can still use the legacy Node.js CLI to check availability in bulk:
-
+**Production Mode** (Builds frontend and starts the Express server):
 ```bash
-node index.js check --domains <comma_separated_domains> [options]
+npm run prod
 ```
 
-**Options:**
-- `-f, --file <path>`: Path to a text file containing domain names (one per line)
-- `-d, --domains <comma_separated_domains>`: Comma-separated list of domains to check
-- `-t, --tlds <comma_separated_tlds>`: Comma-separated list of TLDs to append (e.g. com,io,net)
+---
 
-**Examples:**
+## 📡 API Endpoints
 
-```bash
-# Check multiple domains
-node index.js check -d example.com,google.com
+| Endpoint | Method | Description |
+| :--- | :--- | :--- |
+| `/api/check` | `GET` | Verifies availability, price, and WHOIS info for a single domain. |
+| `/api/generate` | `POST` | Uses Gemini to suggest names based on base name, prompt, and TLDs. |
 
-# Combine a base name with multiple TLDs
-node index.js check -d mycoolstartup -t com,net,io
+---
+
+## 📂 Project Structure
+
+```text
+domain-horizon/
+├── ui/                 # React/Vite Frontend
+│   └── src/            # Components (App, Generator, Results)
+├── server.js           # Main Express server & API routes
+├── gemini.js           # AI Generation logic
+├── godaddy.js          # GoDaddy API integration
+├── whoisUtil.js        # WHOIS scraping and TLD restriction logic
+├── config.js           # Environment & Port management
+└── .env.example        # Template for API keys
 ```
 
-## Structure
+---
 
-- `server.js`: Express API backend serving domain information via `/api/check`.
-- `whoisUtil.js`: Utility integration with the WHOIS network and logic for evaluating domain restrictions.
-- `index.js` & `godaddy.js`: Core logic for GoDaddy availability checks and the CLI interface.
-- `ui/`: The modern React Vite frontend application.
+## ☁️ Deployment
+
+This project is optimized for **Vercel**:
+1. Connect your GitHub repository to Vercel.
+2. The `vercel.json` and `package.json` scripts are pre-configured to handle the build process.
+3. Ensure you add your `GODADDY_API_KEY`, `GODADDY_API_SECRET`, and `GEMINI_API_KEY` to Vercel's Environment Variables.
+
+---
+
+## 📄 License
+This project is licensed under the ISC License.
