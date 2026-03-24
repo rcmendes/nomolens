@@ -64,7 +64,7 @@ function App() {
   const [genPrefixes, setGenPrefixes] = useState('');
   const [genSuffixes, setGenSuffixes] = useState('');
   const [generating, setGenerating] = useState(false);
-  const [generatedDomains, setGeneratedDomains] = useState([]);
+  const [generationResult, setGenerationResult] = useState(null); // { original, suggestions }
   const [genError, setGenError] = useState(null);
   const [selectedTLDs, setSelectedTLDs] = useState(new Set(['.com']));
   const [customTLD, setCustomTLD] = useState('');
@@ -80,7 +80,7 @@ function App() {
 
     setGenerating(true);
     setGenError(null);
-    setGeneratedDomains([]);
+    setGenerationResult(null);
     setSelectedDomains(new Set());
     setBulkResults({});
     setVerifyProgress(null);
@@ -99,8 +99,16 @@ function App() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to generate names');
-      setGeneratedDomains(data);
-      setSelectedDomains(new Set(data));
+
+      // data = { original: { base, domains[] }, suggestions: [{ base, domains[] }] }
+      setGenerationResult(data);
+
+      // Pre-select all domains
+      const allDomains = [
+        ...data.original.domains,
+        ...data.suggestions.flatMap((s) => s.domains),
+      ];
+      setSelectedDomains(new Set(allDomains));
     } catch (err) {
       setGenError(err.message);
     } finally {
@@ -241,7 +249,7 @@ function App() {
           genPrefixes={genPrefixes} setGenPrefixes={setGenPrefixes}
           genSuffixes={genSuffixes} setGenSuffixes={setGenSuffixes}
           generating={generating}
-          generatedDomains={generatedDomains}
+          generationResult={generationResult}
           genError={genError}
           selectedTLDs={selectedTLDs} toggleTLD={toggleTLD}
           customTLD={customTLD} setCustomTLD={setCustomTLD}

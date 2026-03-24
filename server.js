@@ -43,7 +43,7 @@ const { isDev, PORT, ALLOWED_ORIGINS } = require('./config');
 
 const { checkDomainAvailability } = require('./godaddy');
 const { getDomainInfo } = require('./whoisUtil');
-const { generateDomainNames } = require('./gemini');
+const { generateBaseNames } = require('./gemini');
 
 // ── In-memory cache (5-min TTL) ─────────────────────────────────────────────
 const domainCache = new NodeCache({ stdTTL: 300, checkperiod: 60 });
@@ -176,8 +176,29 @@ app.post('/api/generate', apiLimiter, async (req, res) => {
       return res.status(400).json({ error: 'prefixes, suffixes, and tlds must be arrays' });
     }
 
-    const domains = await generateDomainNames({ name, prefixes, suffixes, prompt, tlds });
-    res.json(domains);
+    const cleanName = name.trim().toLowerCase().replace(/\s+/g, '');
+    const activeTlds = (tlds && tlds.length > 0) ? tlds : ['.com', '.io', '.net'];
+
+    // Step 1 – ask Gemini for 10 creative base names (no TLDs)
+    const baseSuggestions = await generateBaseNames({ name: cleanName, prefixes, suffixes, prompt });
+
+    // Step 2 – apply TLDs server-side to keep control over the structure
+    const original = {
+      base: cleanName,
+      domains: activeTlds.map((tld) => `${cleanName}${tld}`),
+    };
+
+    const suggestions = baseSuggestions.map((base) => ({
+      base,
+      domains: activeTlds.map((tld) => `${base}${tld}`),
+    }));
+
+    if (isDev) {
+      const total = original.domains.length + suggestions.reduce((acc, s) => acc + s.domains.length, 0);
+      console.info(`[DEV] /api/generate → ${suggestions.length} suggestions, ${total} total domains`);
+    }
+
+    res.json({ original, suggestions });
   } catch (error) {
     console.error('Error in /api/generate:', error);
     res.status(500).json({ error: 'Failed to generate domain names.' });
