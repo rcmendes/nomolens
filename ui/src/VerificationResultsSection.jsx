@@ -1,30 +1,26 @@
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+import React, {
+  useState,
+  useMemo,
+  useEffect,
+  useRef,
+  forwardRef,
+  useImperativeHandle,
+  useCallback,
+} from 'react';
+import { getEntryStatus } from './domainResultUtils';
+import ResultsCockpit from './ResultsCockpit';
 
-/**
- * Shared helper to derive status from a result object.
- */
-function getEntryStatus(result) {
-  if (result.loading) return 'loading';
-  if (result.error) return 'error';
-  if (result.data?.available) return 'available';
-
-  // Check if expiring soon (within 30 days)
-  if (result.data?.expirationDate && result.data.expirationDate !== 'Unknown') {
-    const expiry = new Date(result.data.expirationDate);
-    const now = new Date();
-    const diffTime = expiry - now;
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    if (diffDays <= 30 && diffDays > 0) return 'expiring-soon';
+function formatCheckedAt(iso) {
+  if (!iso) return null;
+  try {
+    const d = new Date(iso);
+    return d.toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'short' });
+  } catch {
+    return null;
   }
-
-  if (result.data?.whoisError) return 'unavailable';
-  return 'taken';
 }
 
-/**
- * Displays a single domain's verification result card.
- */
-function VerificationCard({ domain, result, isFavorite, addFavorite, removeFavorite }) {
+function VerificationCard({ domain, result, isFavorite, addFavorite, removeFavorite, onRefreshDomain }) {
   const status = getEntryStatus(result);
   const faved = isFavorite(domain);
 
@@ -40,6 +36,8 @@ function VerificationCard({ domain, result, isFavorite, addFavorite, removeFavor
       });
     }
   };
+
+  const checkedLabel = formatCheckedAt(result.checkedAt);
 
   return (
     <div className={`compact-result-card glass status-${status}`}>
@@ -60,7 +58,22 @@ function VerificationCard({ domain, result, isFavorite, addFavorite, removeFavor
                 </>
               )}
             </div>
+            {onRefreshDomain && !result.loading && (
+              <button
+                type="button"
+                className="compact-refresh-btn"
+                onClick={() => onRefreshDomain(domain)}
+                aria-label={`Refresh check for ${domain}`}
+                title="Refresh this check"
+              >
+                ↻
+              </button>
+            )}
           </div>
+
+          {checkedLabel && !result.loading && (
+            <p className="compact-checked-at">Checked {checkedLabel}</p>
+          )}
 
           {!result.loading && !result.error && result.data && (
             <div className="compact-body">
@@ -97,7 +110,6 @@ function VerificationCard({ domain, result, isFavorite, addFavorite, removeFavor
           )}
         </div>
 
-        {/* Favorite star - only for free domains, or if already faved */}
         {!result.loading && !result.error && (status === 'available' || faved) && (
           <button
             className={`fav-star-btn ${faved ? 'faved' : ''}`}
@@ -122,18 +134,21 @@ function VerificationCard({ domain, result, isFavorite, addFavorite, removeFavor
   );
 }
 
-/**
- * The full verification results section rendered below the tree.
- */
-export default function VerificationResultsSection({ bulkResults, isFavorite, addFavorite, removeFavorite }) {
+const VerificationResultsSection = forwardRef(function VerificationResultsSection(
+  { bulkResults, isFavorite, addFavorite, removeFavorite, onRefreshDomain },
+  ref
+) {
   const entries = Object.entries(bulkResults);
-  const [filterStatuses, setFilterStatuses] = useState(new Set(['available', 'expiring-soon', 'taken', 'unavailable']));
-  /** Domains the user has unchecked in the multiselect; all others in current results count as selected. */
+  const [filterStatuses, setFilterStatuses] = useState(
+    new Set(['available', 'expiring-soon', 'taken', 'unavailable'])
+  );
   const [deselectedDomains, setDeselectedDomains] = useState(() => new Set());
-  const [sortKey, setSortKey] = useState('name'); // 'name', 'price', 'tld'
+  const [sortKey, setSortKey] = useState('name');
   const [sortDir, setSortDir] = useState('asc');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [domainFilterQuery, setDomainFilterQuery] = useState('');
   const dropdownRef = useRef(null);
+  const triggerRef = useRef(null);
 
   const allDomainNames = useMemo(() => Object.keys(bulkResults).sort(), [bulkResults]);
 
@@ -142,7 +157,21 @@ export default function VerificationResultsSection({ bulkResults, isFavorite, ad
     [allDomainNames, deselectedDomains]
   );
 
-  // Handle clicking outside dropdown
+  useImperativeHandle(
+    ref,
+    () => ({
+      showOnlyAvailable: () => setFilterStatuses(new Set(['available'])),
+      resetFilters: () => {
+        setFilterStatuses(new Set(['available', 'expiring-soon', 'taken', 'unavailable']));
+        setDeselectedDomains(new Set());
+        setSortKey('name');
+        setSortDir('asc');
+        setDomainFilterQuery('');
+      },
+    }),
+    []
+  );
+
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -153,8 +182,23 @@ export default function VerificationResultsSection({ bulkResults, isFavorite, ad
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  const closeDropdown = useCallback(() => setIsDropdownOpen(false), []);
+
+  useEffect(() => {
+    if (!isDropdownOpen) return;
+    const onKey = (e) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        closeDropdown();
+        triggerRef.current?.focus();
+      }
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [isDropdownOpen, closeDropdown]);
+
   const toggleStatusFilter = (status) => {
-    setFilterStatuses(prev => {
+    setFilterStatuses((prev) => {
       const next = new Set(prev);
       if (next.has(status)) next.delete(status);
       else next.add(status);
@@ -180,18 +224,23 @@ export default function VerificationResultsSection({ bulkResults, isFavorite, ad
     }
   };
 
+  const filteredDomainNames = useMemo(() => {
+    const q = domainFilterQuery.trim().toLowerCase();
+    if (!q) return allDomainNames;
+    return allDomainNames.filter((d) => d.toLowerCase().includes(q));
+  }, [allDomainNames, domainFilterQuery]);
+
   const filteredAndSortedEntries = useMemo(() => {
     return entries
       .filter(([domain, result]) => {
         const status = getEntryStatus(result);
-        // Status filtering (ignore loading/error for status filter)
         if (status !== 'loading' && status !== 'error' && !filterStatuses.has(status)) return false;
-        // Domain name filtering (unchecked = hidden)
         if (deselectedDomains.has(domain)) return false;
         return true;
       })
       .sort(([domA, resA], [domB, resB]) => {
-        let valA, valB;
+        let valA;
+        let valB;
 
         if (sortKey === 'name') {
           valA = domA;
@@ -217,6 +266,8 @@ export default function VerificationResultsSection({ bulkResults, isFavorite, ad
       className="verification-results-section"
       style={{ marginTop: '3rem', borderTop: '1px solid var(--glass-border)', paddingTop: '2rem' }}
     >
+      <ResultsCockpit bulkResults={bulkResults} />
+
       <h3 style={{ marginBottom: '1.5rem', fontSize: '1.2rem', color: 'var(--text-main)' }}>
         Verification Results
       </h3>
@@ -225,25 +276,29 @@ export default function VerificationResultsSection({ bulkResults, isFavorite, ad
         <div className="filter-group">
           <span className="filter-label">Filter by Status</span>
           <div className="status-filter-pills">
-            <button 
+            <button
+              type="button"
               className={`status-pill free ${filterStatuses.has('available') ? 'active' : ''}`}
               onClick={() => toggleStatusFilter('available')}
             >
               Free
             </button>
-            <button 
+            <button
+              type="button"
               className={`status-pill expiring ${filterStatuses.has('expiring-soon') ? 'active' : ''}`}
               onClick={() => toggleStatusFilter('expiring-soon')}
             >
               Expiring Soon
             </button>
-            <button 
+            <button
+              type="button"
               className={`status-pill taken ${filterStatuses.has('taken') ? 'active' : ''}`}
               onClick={() => toggleStatusFilter('taken')}
             >
               Taken
             </button>
-            <button 
+            <button
+              type="button"
               className={`status-pill unavailable ${filterStatuses.has('unavailable') ? 'active' : ''}`}
               onClick={() => toggleStatusFilter('unavailable')}
             >
@@ -253,29 +308,50 @@ export default function VerificationResultsSection({ bulkResults, isFavorite, ad
         </div>
 
         <div className="filter-group">
-          <span className="filter-label">Filter by Domain</span>
+          <span className="filter-label" id="domain-multiselect-label">
+            Filter by Domain
+          </span>
           <div className="domain-multiselect-container" ref={dropdownRef}>
-            <button 
-              className="multiselect-trigger" 
+            <button
+              ref={triggerRef}
+              type="button"
+              className="multiselect-trigger"
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+              aria-expanded={isDropdownOpen}
+              aria-haspopup="listbox"
+              aria-labelledby="domain-multiselect-label"
             >
               {selectedDomainCount === allDomainNames.length
                 ? 'All Domains Selected'
                 : `${selectedDomainCount} selected`}
-              <span>▼</span>
+              <span aria-hidden>▼</span>
             </button>
             {isDropdownOpen && (
-              <div className="multiselect-dropdown">
-                {allDomainNames.map(domain => (
-                  <label key={domain} className="multiselect-item">
-                    <input 
-                      type="checkbox" 
-                      checked={!deselectedDomains.has(domain)}
-                      onChange={() => toggleDomainFilter(domain)}
-                    />
-                    <span>{domain}</span>
-                  </label>
-                ))}
+              <div className="multiselect-dropdown" role="listbox" aria-multiselectable="true">
+                <input
+                  type="search"
+                  className="multiselect-search"
+                  placeholder="Search domains…"
+                  value={domainFilterQuery}
+                  onChange={(e) => setDomainFilterQuery(e.target.value)}
+                  aria-label="Filter domain list"
+                  autoFocus
+                />
+                <div className="multiselect-scroll">
+                  {filteredDomainNames.map((domain) => (
+                    <label key={domain} className="multiselect-item">
+                      <input
+                        type="checkbox"
+                        checked={!deselectedDomains.has(domain)}
+                        onChange={() => toggleDomainFilter(domain)}
+                      />
+                      <span>{domain}</span>
+                    </label>
+                  ))}
+                  {filteredDomainNames.length === 0 && (
+                    <p className="multiselect-empty">No matching domains</p>
+                  )}
+                </div>
               </div>
             )}
           </div>
@@ -284,19 +360,22 @@ export default function VerificationResultsSection({ bulkResults, isFavorite, ad
         <div className="sort-group">
           <span className="filter-label">Sort by</span>
           <div className="sort-controls">
-            <button 
+            <button
+              type="button"
               className={`sort-btn ${sortKey === 'name' ? 'active' : ''}`}
               onClick={() => handleSort('name')}
             >
               Name {sortKey === 'name' && (sortDir === 'asc' ? '↑' : '↓')}
             </button>
-            <button 
+            <button
+              type="button"
               className={`sort-btn ${sortKey === 'price' ? 'active' : ''}`}
               onClick={() => handleSort('price')}
             >
               Price {sortKey === 'price' && (sortDir === 'asc' ? '↑' : '↓')}
             </button>
-            <button 
+            <button
+              type="button"
               className={`sort-btn ${sortKey === 'tld' ? 'active' : ''}`}
               onClick={() => handleSort('tld')}
             >
@@ -316,6 +395,7 @@ export default function VerificationResultsSection({ bulkResults, isFavorite, ad
               isFavorite={isFavorite}
               addFavorite={addFavorite}
               removeFavorite={removeFavorite}
+              onRefreshDomain={onRefreshDomain}
             />
           ))
         ) : (
@@ -326,4 +406,6 @@ export default function VerificationResultsSection({ bulkResults, isFavorite, ad
       </div>
     </div>
   );
-}
+});
+
+export default VerificationResultsSection;

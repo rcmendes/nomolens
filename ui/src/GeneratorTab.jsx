@@ -1,7 +1,6 @@
-import React from 'react';
+import React, { useState, forwardRef } from 'react';
 import VerificationResultsSection from './VerificationResultsSection';
 
-const PREDEFINED_TLDS = ['.com', '.io', '.co', '.ai', '.net', '.org', '.app', '.dev', '.tech', '.me', '.pro'];
 const MAX_WEIGHTED_WORDS = 5;
 
 function SeedRootIcon() {
@@ -23,7 +22,6 @@ function SeedRootIcon() {
   );
 }
 
-// ── Helper: a single domain leaf card ─────────────────────────────────────────
 function DomainLeaf({ domain, selected, onToggle, disabled, bulkResults }) {
   const result = bulkResults[domain];
   let statusBadge = null;
@@ -37,7 +35,10 @@ function DomainLeaf({ domain, selected, onToggle, disabled, bulkResults }) {
   return (
     <div
       className={`tree-leaf-card glass ${selected ? 'selected' : ''}`}
-      onClick={(e) => { if (e.target.tagName !== 'INPUT') onToggle(domain); }}
+      onClick={(e) => {
+        if (e.target.closest('.tree-checkbox-label')) return;
+        onToggle(domain);
+      }}
     >
       <label className="tree-checkbox-label">
         <input
@@ -54,7 +55,6 @@ function DomainLeaf({ domain, selected, onToggle, disabled, bulkResults }) {
   );
 }
 
-// ── Helper: a group branch (original or a suggestion) ─────────────────────────
 function DomainGroup({ label, domains, selectedDomains, onToggle, bulkVerifying, bulkResults, onToggleGroup }) {
   const allSelected = domains.every((d) => selectedDomains.has(d));
   const someSelected = domains.some((d) => selectedDomains.has(d));
@@ -64,7 +64,9 @@ function DomainGroup({ label, domains, selectedDomains, onToggle, bulkVerifying,
       <div className="tree-group-header" onClick={() => onToggleGroup(domains, !allSelected)}>
         <span className={`tree-group-dot ${allSelected ? 'all' : someSelected ? 'some' : 'none'}`} />
         <span className="tree-group-label">{label}</span>
-        <span className="tree-group-count">{domains.length} variant{domains.length !== 1 ? 's' : ''}</span>
+        <span className="tree-group-count">
+          {domains.length} variant{domains.length !== 1 ? 's' : ''}
+        </span>
       </div>
       <div className="tree-leaves">
         {domains.map((d) => (
@@ -82,37 +84,44 @@ function DomainGroup({ label, domains, selectedDomains, onToggle, bulkVerifying,
   );
 }
 
-// ── Main GeneratorTab ─────────────────────────────────────────────────────────
-export default function GeneratorTab({
-  genPrompt, setGenPrompt,
-  genKeywords,
-  genKeywordInput,
-  setGenKeywordInput,
-  genKeywordError,
-  setGenKeywordError,
-  handleAddGenKeyword,
-  handleRemoveGenKeyword,
-  genPrefixes, setGenPrefixes,
-  genSuffixes, setGenSuffixes,
-  generating,
-  generationResult,
-  genError,
-  selectedTLDs, toggleTLD,
-  customTLD, setCustomTLD,
-  customTLDError,
-  handleAddCustomTLD,
-  selectedDomains, toggleDomainSelection,
-  bulkVerifying,
-  bulkResults,
-   handleBulkVerify,
-   hasSelectionChanged,
-   verifyProgress,
-  onGenerate,
-  addFavorite, removeFavorite, isFavorite,
-}) {
+const GeneratorTab = forwardRef(function GeneratorTab(
+  {
+    genPrompt,
+    setGenPrompt,
+    genKeywords,
+    genKeywordInput,
+    setGenKeywordInput,
+    genKeywordError,
+    setGenKeywordError,
+    handleAddGenKeyword,
+    handleRemoveGenKeyword,
+    genPrefixes,
+    setGenPrefixes,
+    genSuffixes,
+    setGenSuffixes,
+    generating,
+    generationResult,
+    genError,
+    selectedDomains,
+    toggleDomainSelection,
+    bulkVerifying,
+    bulkResults,
+    handleBulkVerify,
+    hasSelectionChanged,
+    verifyProgress,
+    onGenerate,
+    addFavorite,
+    removeFavorite,
+    isFavorite,
+    verificationSectionRef,
+    onRefreshDomain,
+    showVerificationResults,
+  },
+  ref
+) {
   const hasResult = generationResult !== null;
+  const [advancedOpen, setAdvancedOpen] = useState(false);
 
-  // Toggle all domains in a group on/off
   const handleToggleGroup = (domains, shouldSelect) => {
     domains.forEach((d) => {
       const isSelected = selectedDomains.has(d);
@@ -120,6 +129,9 @@ export default function GeneratorTab({
       if (!shouldSelect && isSelected) toggleDomainSelection(d);
     });
   };
+
+  const verifyDisabled = bulkVerifying || !hasSelectionChanged;
+  const showVerifyHint = selectedDomains.size > 0 && verifyDisabled && !bulkVerifying;
 
   return (
     <section className="mode-section glass" style={{ animation: 'none', opacity: 1 }}>
@@ -135,6 +147,7 @@ export default function GeneratorTab({
             Product Context / Prompt <span className="required">*</span>
           </label>
           <textarea
+            ref={ref}
             id="gen-prompt"
             placeholder="e.g. A marketplace connecting local services…"
             value={genPrompt}
@@ -189,91 +202,60 @@ export default function GeneratorTab({
             </button>
           </div>
           <p style={{ marginTop: '0.35rem', color: 'var(--text-muted)', fontSize: '0.78rem' }}>
-            {genKeywords.length}/{MAX_WEIGHTED_WORDS} words added. Each word is treated as a higher-priority concept signal.
+            {genKeywords.length}/{MAX_WEIGHTED_WORDS} words added. Each word is treated as a higher-priority
+            concept signal.
           </p>
           {genKeywordError && (
-            <p className="tld-error-msg" role="alert">{genKeywordError}</p>
+            <p className="tld-error-msg" role="alert">
+              {genKeywordError}
+            </p>
           )}
         </div>
 
-        <div className="form-row">
-          <div className="form-group">
-            <label htmlFor="gen-prefixes">Prefixes (comma-separated)</label>
-            <input
-              id="gen-prefixes"
-              type="text"
-              placeholder="e.g. get, try, my"
-              value={genPrefixes}
-              onChange={(e) => setGenPrefixes(e.target.value)}
-              disabled={generating}
-            />
-          </div>
-          <div className="form-group">
-            <label htmlFor="gen-suffixes">Suffixes (comma-separated)</label>
-            <input
-              id="gen-suffixes"
-              type="text"
-              placeholder="e.g. app, hq, tech"
-              value={genSuffixes}
-              onChange={(e) => setGenSuffixes(e.target.value)}
-              disabled={generating}
-            />
-          </div>
-        </div>
-
-        <div className="form-group tld-section">
-          <label>TLDs (Optional)</label>
-          <div className="tld-chips">
-            {PREDEFINED_TLDS.map((tld) => (
-              <button
-                key={tld}
-                type="button"
-                className={`tld-chip ${selectedTLDs.has(tld) ? 'selected' : ''}`}
-                onClick={() => toggleTLD(tld)}
-                disabled={generating}
-              >
-                {tld}
-              </button>
-            ))}
-            {Array.from(selectedTLDs)
-              .filter((tld) => !PREDEFINED_TLDS.includes(tld))
-              .map((tld) => (
-                <button
-                  key={tld}
-                  type="button"
-                  className="tld-chip selected custom"
-                  onClick={() => toggleTLD(tld)}
+        <div className="advanced-accordion">
+          <button
+            type="button"
+            className="advanced-accordion-trigger"
+            onClick={() => setAdvancedOpen((o) => !o)}
+            aria-expanded={advancedOpen}
+            id="advanced-label"
+          >
+            <span>Advanced options</span>
+            <span className="advanced-chevron" aria-hidden>
+              {advancedOpen ? '▾' : '▸'}
+            </span>
+          </button>
+          <div
+            className="advanced-accordion-panel"
+            role="region"
+            aria-labelledby="advanced-label"
+            hidden={!advancedOpen}
+          >
+            <div className="form-row">
+              <div className="form-group">
+                <label htmlFor="gen-prefixes">Prefixes (comma-separated)</label>
+                <input
+                  id="gen-prefixes"
+                  type="text"
+                  placeholder="e.g. get, try, my"
+                  value={genPrefixes}
+                  onChange={(e) => setGenPrefixes(e.target.value)}
                   disabled={generating}
-                  title="Remove custom TLD"
-                >
-                  {tld} &times;
-                </button>
-              ))}
+                />
+              </div>
+              <div className="form-group">
+                <label htmlFor="gen-suffixes">Suffixes (comma-separated)</label>
+                <input
+                  id="gen-suffixes"
+                  type="text"
+                  placeholder="e.g. app, hq, tech"
+                  value={genSuffixes}
+                  onChange={(e) => setGenSuffixes(e.target.value)}
+                  disabled={generating}
+                />
+              </div>
+            </div>
           </div>
-          <div className="custom-tld-input">
-            <input
-              type="text"
-              placeholder="Add custom (.xyz)"
-              value={customTLD}
-              onChange={(e) => setCustomTLD(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') { e.preventDefault(); handleAddCustomTLD(e); }
-              }}
-              disabled={generating}
-              aria-label="Custom TLD input"
-            />
-            <button
-              type="button"
-              className="add-tld-btn"
-              onClick={handleAddCustomTLD}
-              disabled={generating || !customTLD.trim()}
-            >
-              Add
-            </button>
-          </div>
-          {customTLDError && (
-            <p className="tld-error-msg" role="alert">{customTLDError}</p>
-          )}
         </div>
 
         <button
@@ -286,7 +268,9 @@ export default function GeneratorTab({
       </form>
 
       {genError && (
-        <div className="error-msg" role="alert" style={{ marginTop: '1rem' }}>{genError}</div>
+        <div className="error-msg" role="alert" style={{ marginTop: '1rem' }}>
+          {genError}
+        </div>
       )}
 
       {generating && (
@@ -296,25 +280,29 @@ export default function GeneratorTab({
         </div>
       )}
 
-      {/* ── Tree results ────────────────────────────────────────────────── */}
       {hasResult && (
         <div className="generated-results">
           <h3 style={{ fontSize: '1.2rem', marginBottom: '1.25rem' }}>
             AI-generated domain ideas
-            <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginLeft: '0.75rem', fontWeight: 400 }}>
+            <span
+              style={{
+                fontSize: '0.85rem',
+                color: 'var(--text-muted)',
+                marginLeft: '0.75rem',
+                fontWeight: 400,
+              }}
+            >
               {generationResult.suggestions.length} groups ·{' '}
               {generationResult.suggestions.reduce((a, s) => a + s.domains.length, 0)} domains
             </span>
           </h3>
 
           <div className="tree-container">
-            {/* Root node */}
             <div className="tree-root">
               <span className="tree-root-name">Generated Ideas</span>
             </div>
 
             <div className="tree-branches">
-              {/* AI suggestion branches */}
               {generationResult.suggestions.map((suggestion, idx) => (
                 <div key={`${suggestion.base}-${idx}`} className="tree-branch">
                   <div className="tree-line" />
@@ -332,7 +320,6 @@ export default function GeneratorTab({
             </div>
           </div>
 
-          {/* Verify button */}
           {selectedDomains.size > 0 && (
             <div className="verify-action-container">
               {bulkVerifying && verifyProgress && (
@@ -340,26 +327,38 @@ export default function GeneratorTab({
                   {verifyProgress.done} / {verifyProgress.total} verified
                 </span>
               )}
-              <button
-                className="verify-btn"
-                onClick={handleBulkVerify}
-                disabled={bulkVerifying || !hasSelectionChanged}
-              >
-                {bulkVerifying
-                  ? 'Verifying…'
-                  : `Verify Selected (${selectedDomains.size})`}
-              </button>
+              <div className="verify-action-col">
+                <button
+                  className="verify-btn"
+                  onClick={handleBulkVerify}
+                  disabled={verifyDisabled}
+                >
+                  {bulkVerifying ? 'Verifying…' : `Verify Selected (${selectedDomains.size})`}
+                </button>
+                {showVerifyHint && (
+                  <p className="verify-hint" role="note">
+                    Selection matches your last verification. Change which domains are selected to run a new
+                    check.
+                  </p>
+                )}
+              </div>
             </div>
           )}
 
-          <VerificationResultsSection
-            bulkResults={bulkResults}
-            isFavorite={isFavorite}
-            addFavorite={addFavorite}
-            removeFavorite={removeFavorite}
-          />
+          {showVerificationResults && (
+            <VerificationResultsSection
+              ref={verificationSectionRef}
+              bulkResults={bulkResults}
+              isFavorite={isFavorite}
+              addFavorite={addFavorite}
+              removeFavorite={removeFavorite}
+              onRefreshDomain={onRefreshDomain}
+            />
+          )}
         </div>
       )}
     </section>
   );
-}
+});
+
+export default GeneratorTab;
