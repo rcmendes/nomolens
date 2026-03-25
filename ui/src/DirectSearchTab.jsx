@@ -13,6 +13,9 @@ const DirectSearchTab = forwardRef(function DirectSearchTab(
     addFavorite,
     removeFavorite,
     isFavorite,
+    addMonitored,
+    removeMonitored,
+    isMonitored,
     verificationSectionRef,
     onRefreshDomain,
     showVerificationResults,
@@ -83,6 +86,9 @@ const DirectSearchTab = forwardRef(function DirectSearchTab(
           isFavorite={isFavorite}
           addFavorite={addFavorite}
           removeFavorite={removeFavorite}
+          isMonitored={isMonitored}
+          addMonitored={addMonitored}
+          removeMonitored={removeMonitored}
           onRefreshDomain={onRefreshDomain}
         />
       )}

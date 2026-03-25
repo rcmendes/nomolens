@@ -20,7 +20,17 @@ function formatCheckedAt(iso) {
   }
 }
 
-function VerificationCard({ domain, result, isFavorite, addFavorite, removeFavorite, onRefreshDomain }) {
+function VerificationCard({
+  domain,
+  result,
+  isFavorite,
+  addFavorite,
+  removeFavorite,
+  isMonitored,
+  addMonitored,
+  removeMonitored,
+  onRefreshDomain,
+}) {
   const status = getEntryStatus(result);
   const faved = isFavorite(domain);
 
@@ -33,6 +43,24 @@ function VerificationCard({ domain, result, isFavorite, addFavorite, removeFavor
         status,
         price: result.data?.price,
         currency: result.data?.currency,
+        expirationDate: result.data?.expirationDate,
+        whoisError: result.data?.whoisError,
+      });
+    }
+  };
+
+  const monitoring = isMonitored(domain);
+  const handleMonitorToggle = (e) => {
+    e.stopPropagation();
+    if (monitoring) {
+      removeMonitored(domain);
+    } else {
+      addMonitored(domain, {
+        status,
+        price: result.data?.price,
+        currency: result.data?.currency,
+        expirationDate: result.data?.expirationDate,
+        whoisError: result.data?.whoisError,
       });
     }
   };
@@ -110,16 +138,29 @@ function VerificationCard({ domain, result, isFavorite, addFavorite, removeFavor
           )}
         </div>
 
-        {!result.loading && !result.error && (status === 'available' || faved) && (
-          <button
-            className={`fav-star-btn ${faved ? 'faved' : ''}`}
-            onClick={handleFavToggle}
-            aria-label={faved ? `Remove ${domain} from favorites` : `Add ${domain} to favorites`}
-            title={faved ? 'Remove from favorites' : 'Add to favorites'}
-          >
-            {faved ? '★' : '☆'}
-          </button>
-        )}
+        <div className="compact-actions">
+          {!result.loading && !result.error && (
+            <button
+              className={`monitor-btn ${monitoring ? 'active' : ''}`}
+              onClick={handleMonitorToggle}
+              aria-label={monitoring ? `Stop monitoring ${domain}` : `Monitor ${domain}`}
+              title={monitoring ? 'Stop monitoring' : 'Monitor domain'}
+            >
+              {monitoring ? '🔔' : '🔕'}
+            </button>
+          )}
+
+          {!result.loading && !result.error && (status === 'available' || faved) && (
+            <button
+              className={`fav-star-btn ${faved ? 'faved' : ''}`}
+              onClick={handleFavToggle}
+              aria-label={faved ? `Remove ${domain} from favorites` : `Add ${domain} to favorites`}
+              title={faved ? 'Remove from favorites' : 'Add to favorites'}
+            >
+              {faved ? '★' : '☆'}
+            </button>
+          )}
+        </div>
 
         {!result.loading && !result.error && result.data?.available && result.data.price && (
           <div className="compact-right">
@@ -135,7 +176,16 @@ function VerificationCard({ domain, result, isFavorite, addFavorite, removeFavor
 }
 
 const VerificationResultsSection = forwardRef(function VerificationResultsSection(
-  { bulkResults, isFavorite, addFavorite, removeFavorite, onRefreshDomain },
+  {
+    bulkResults,
+    isFavorite,
+    addFavorite,
+    removeFavorite,
+    isMonitored,
+    addMonitored,
+    removeMonitored,
+    onRefreshDomain,
+  },
   ref
 ) {
   const entries = Object.entries(bulkResults);
@@ -395,6 +445,9 @@ const VerificationResultsSection = forwardRef(function VerificationResultsSectio
               isFavorite={isFavorite}
               addFavorite={addFavorite}
               removeFavorite={removeFavorite}
+              isMonitored={isMonitored}
+              addMonitored={addMonitored}
+              removeMonitored={removeMonitored}
               onRefreshDomain={onRefreshDomain}
             />
           ))

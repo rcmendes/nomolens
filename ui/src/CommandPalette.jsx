@@ -3,13 +3,13 @@ import React, { useEffect, useCallback, useState, useRef, useMemo } from 'react'
 export default function CommandPalette({
   open,
   onClose,
-  activeTab,
   setActiveTab,
   focusSearchInput,
   focusGenPrompt,
   onVerifySelected,
   canVerifySelected,
-  verificationControlsRef,
+  onShowOnlyAvailable,
+  onResetFilters,
   onCopyAvailable,
   hasAvailableToCopy,
 }) {
@@ -20,6 +20,7 @@ export default function CommandPalette({
     const list = [
       { id: 'tab-search', label: 'Go to Direct Search', keywords: 'search check', run: () => setActiveTab('search') },
       { id: 'tab-gen', label: 'Go to Generate with AI', keywords: 'ai brainstorm', run: () => setActiveTab('generate') },
+      { id: 'tab-monitor', label: 'Go to Monitor List', keywords: 'watchlist monitor bell tracking', run: () => setActiveTab('monitor') },
       { id: 'focus-search', label: 'Focus domain search field', keywords: 'input', run: () => focusSearchInput?.() },
       { id: 'focus-prompt', label: 'Focus AI prompt', keywords: 'generate', run: () => focusGenPrompt?.() },
     ];
@@ -36,13 +37,13 @@ export default function CommandPalette({
         id: 'filter-available',
         label: 'Show only available domains',
         keywords: 'free filter',
-        run: () => verificationControlsRef?.current?.showOnlyAvailable?.(),
+        run: () => onShowOnlyAvailable?.(),
       },
       {
         id: 'reset-filters',
         label: 'Reset result filters',
         keywords: 'clear all',
-        run: () => verificationControlsRef?.current?.resetFilters?.(),
+        run: () => onResetFilters?.(),
       }
     );
     if (hasAvailableToCopy) {
@@ -60,7 +61,8 @@ export default function CommandPalette({
     focusGenPrompt,
     onVerifySelected,
     canVerifySelected,
-    verificationControlsRef,
+    onShowOnlyAvailable,
+    onResetFilters,
     onCopyAvailable,
     hasAvailableToCopy,
   ]);
@@ -78,11 +80,13 @@ export default function CommandPalette({
   const [highlight, setHighlight] = useState(0);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setHighlight(0);
   }, [query, open]);
 
   useEffect(() => {
     if (open) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setQuery('');
       setTimeout(() => inputRef.current?.focus(), 0);
     }

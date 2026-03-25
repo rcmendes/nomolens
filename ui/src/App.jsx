@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import DirectSearchTab from './DirectSearchTab';
 import GeneratorTab from './GeneratorTab';
+import MonitorTab from './MonitorTab';
 import FavoritesPanel from './FavoritesPanel';
 import TldProfileBar from './TldProfileBar';
 import CommandPalette from './CommandPalette';
@@ -18,6 +19,8 @@ function normalizeFavoriteRow(f) {
     tags: f.tags ?? '',
     addedAt: f.addedAt ?? new Date().toISOString(),
     checkedAt: f.checkedAt ?? null,
+    expirationDate: f.expirationDate ?? null,
+    whoisError: f.whoisError ?? null,
   };
 }
 
@@ -34,6 +37,7 @@ function App() {
   const verificationSectionRef = useRef(null);
   const tabSearchRef = useRef(null);
   const tabGenerateRef = useRef(null);
+  const tabMonitorRef = useRef(null);
   const tabListRef = useRef(null);
 
   const [paletteOpen, setPaletteOpen] = useState(false);
@@ -61,9 +65,7 @@ function App() {
   const [bulkResults, setBulkResults] = useState({});
   const [bulkVerifying, setBulkVerifying] = useState(false);
   const [verifyProgress, setVerifyProgress] = useState(null);
-
   const FAV_KEY = 'domainHorizon_favorites';
-
   const [favorites, setFavorites] = useState(() => {
     try {
       const raw = JSON.parse(localStorage.getItem(FAV_KEY) || '[]');
@@ -73,7 +75,18 @@ function App() {
     }
   });
 
+  const MON_KEY = 'domainHorizon_monitored';
+  const [monitored, setMonitored] = useState(() => {
+    try {
+      const raw = JSON.parse(localStorage.getItem(MON_KEY) || '[]');
+      return Array.isArray(raw) ? raw.map(normalizeFavoriteRow) : [];
+    } catch {
+      return [];
+    }
+  });
+
   const [recheckingDomain, setRecheckingDomain] = useState(null);
+  const [recheckingMonitoredDomain, setRecheckingMonitoredDomain] = useState(null);
 
   useEffect(() => {
     try {
@@ -82,6 +95,14 @@ function App() {
       console.warn('Failed to persist favorites', e);
     }
   }, [favorites]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(MON_KEY, JSON.stringify(monitored));
+    } catch (e) {
+      console.warn('Failed to persist monitored list', e);
+    }
+  }, [monitored]);
 
   const addFavorite = useCallback((domain, resultData) => {
     setFavorites((prev) => {
@@ -111,6 +132,36 @@ function App() {
   const isFavorite = useCallback(
     (domain) => favorites.some((f) => f.domain === domain),
     [favorites]
+  );
+
+  const addMonitored = useCallback((domain, resultData) => {
+    setMonitored((prev) => {
+      if (prev.some((m) => m.domain === domain)) return prev;
+      return [
+        normalizeFavoriteRow({
+          domain,
+          notes: '',
+          tags: '',
+          addedAt: new Date().toISOString(),
+          checkedAt: new Date().toISOString(),
+          ...resultData,
+        }),
+        ...prev,
+      ];
+    });
+  }, []);
+
+  const removeMonitored = useCallback((domain) => {
+    setMonitored((prev) => prev.filter((m) => m.domain !== domain));
+  }, []);
+
+  const updateMonitoredField = useCallback((domain, patch) => {
+    setMonitored((prev) => prev.map((m) => (m.domain === domain ? { ...m, ...patch } : m)));
+  }, []);
+
+  const isMonitored = useCallback(
+    (domain) => monitored.some((m) => m.domain === domain),
+    [monitored]
   );
 
   const CACHE_KEY = 'domainHorizon_cache';
@@ -455,6 +506,8 @@ function App() {
                   price: data?.price,
                   currency: data?.currency,
                   checkedAt: new Date().toISOString(),
+                  expirationDate: data?.expirationDate ?? null,
+                  whoisError: data?.whoisError ?? null,
                 })
               : f
           )
@@ -468,12 +521,46 @@ function App() {
     [saveToCache]
   );
 
+  const refreshMonitored = useCallback(
+    async (domain) => {
+      setRecheckingMonitoredDomain(domain);
+      try {
+        const res = await fetch(`${API_BASE}/api/check?domain=${encodeURIComponent(domain)}`);
+        const data = await res.json();
+        const apiError = !res.ok ? data.error || 'Error' : null;
+        const synthetic = { loading: false, data, error: apiError };
+        const status = getEntryStatus(synthetic);
+        if (!apiError && !data.available) saveToCache(domain, data);
+        setMonitored((prev) =>
+          prev.map((m) =>
+            m.domain === domain
+              ? normalizeFavoriteRow({
+                  ...m,
+                  status,
+                  price: data?.price,
+                  currency: data?.currency,
+                  checkedAt: new Date().toISOString(),
+                  expirationDate: data?.expirationDate ?? null,
+                  whoisError: data?.whoisError ?? null,
+                })
+              : m
+          )
+        );
+      } catch (e) {
+        console.warn('Re-check monitored failed', e);
+      } finally {
+        setRecheckingMonitoredDomain(null);
+      }
+    },
+    [saveToCache]
+  );
+
   const skipInitialUrlWrite = useRef(true);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const tab = params.get('tab');
-    if (tab === 'generate' || tab === 'search') {
+    if (tab === 'generate' || tab === 'search' || tab === 'monitor') {
       setActiveTab(tab);
     }
     const q = params.get('q');
@@ -517,16 +604,6 @@ function App() {
     return () => document.removeEventListener('keydown', onKey);
   }, []);
 
-  const focusSearchInput = useCallback(() => {
-    setActiveTab('search');
-    setTimeout(() => searchInputRef.current?.focus(), 0);
-  }, []);
-
-  const focusGenPrompt = useCallback(() => {
-    setActiveTab('generate');
-    setTimeout(() => genPromptRef.current?.focus(), 0);
-  }, []);
-
   const copyAvailableDomains = useCallback(async () => {
     const available = Object.entries(bulkResults)
       .filter(([, r]) => getEntryStatus(r) === 'available')
@@ -545,24 +622,18 @@ function App() {
     [bulkResults]
   );
 
-  const canVerifyFromPalette =
-    activeTab === 'generate' &&
-    generationResult &&
-    selectedDomains.size > 0 &&
-    hasSelectionChanged &&
-    !bulkVerifying;
-
   const tldBarDisabled = loading || bulkVerifying || generating;
 
   const onTabListKeyDown = (e) => {
-    const order = ['search', 'generate'];
+    const order = ['search', 'generate', 'monitor'];
     const i = order.indexOf(activeTab);
     if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
       e.preventDefault();
       const next = e.key === 'ArrowRight' ? (i + 1) % order.length : (i - 1 + order.length) % order.length;
       setActiveTab(order[next]);
       requestAnimationFrame(() => {
-        (next === 0 ? tabSearchRef : tabGenerateRef).current?.focus();
+        const refs = [tabSearchRef, tabGenerateRef, tabMonitorRef];
+        refs[next].current?.focus();
       });
     }
     if (e.key === 'Home') {
@@ -572,8 +643,8 @@ function App() {
     }
     if (e.key === 'End') {
       e.preventDefault();
-      setActiveTab('generate');
-      tabGenerateRef.current?.focus();
+      setActiveTab('monitor');
+      tabMonitorRef.current?.focus();
     }
   };
 
@@ -609,11 +680,9 @@ function App() {
         onClose={() => setPaletteOpen(false)}
         activeTab={activeTab}
         setActiveTab={setActiveTab}
-        focusSearchInput={focusSearchInput}
-        focusGenPrompt={focusGenPrompt}
         onVerifySelected={handleBulkVerify}
-        canVerifySelected={canVerifyFromPalette}
-        verificationControlsRef={verificationSectionRef}
+        onShowOnlyAvailable={() => verificationSectionRef.current?.showOnlyAvailable?.()}
+        onResetFilters={() => verificationSectionRef.current?.resetFilters?.()}
         onCopyAvailable={copyAvailableDomains}
         hasAvailableToCopy={hasAvailableToCopy}
       />
@@ -658,17 +727,32 @@ function App() {
             >
               Generate with AI
             </button>
+            <button
+              ref={tabMonitorRef}
+              id="tab-monitor"
+              role="tab"
+              type="button"
+              aria-selected={activeTab === 'monitor'}
+              aria-controls="panel-monitor"
+              tabIndex={activeTab === 'monitor' ? 0 : -1}
+              className={`tab-btn ${activeTab === 'monitor' ? 'active' : ''}`}
+              onClick={() => setActiveTab('monitor')}
+            >
+              Monitor List
+            </button>
           </div>
 
-          <TldProfileBar
-            selectedTLDs={selectedTLDs}
-            toggleTLD={toggleTLD}
-            customTLD={customTLD}
-            setCustomTLD={setCustomTLD}
-            customTLDError={customTLDError}
-            handleAddCustomTLD={handleAddCustomTLD}
-            disabled={tldBarDisabled}
-          />
+          {activeTab !== 'monitor' && (
+            <TldProfileBar
+              selectedTLDs={selectedTLDs}
+              toggleTLD={toggleTLD}
+              customTLD={customTLD}
+              setCustomTLD={setCustomTLD}
+              customTLDError={customTLDError}
+              handleAddCustomTLD={handleAddCustomTLD}
+              disabled={tldBarDisabled}
+            />
+          )}
 
           <div
             id="panel-search"
@@ -688,6 +772,9 @@ function App() {
               addFavorite={addFavorite}
               removeFavorite={removeFavorite}
               isFavorite={isFavorite}
+              addMonitored={addMonitored}
+              removeMonitored={removeMonitored}
+              isMonitored={isMonitored}
               verificationSectionRef={verificationSectionRef}
               onRefreshDomain={refreshDomainCheck}
               showVerificationResults={showDirectVerification}
@@ -729,9 +816,27 @@ function App() {
               addFavorite={addFavorite}
               removeFavorite={removeFavorite}
               isFavorite={isFavorite}
+              addMonitored={addMonitored}
+              removeMonitored={removeMonitored}
+              isMonitored={isMonitored}
               verificationSectionRef={verificationSectionRef}
               onRefreshDomain={refreshDomainCheck}
               showVerificationResults={showGenerateVerification}
+            />
+          </div>
+
+          <div
+            id="panel-monitor"
+            role="tabpanel"
+            aria-labelledby="tab-monitor"
+            hidden={activeTab !== 'monitor'}
+          >
+            <MonitorTab
+              monitored={monitored}
+              removeMonitored={removeMonitored}
+              updateMonitoredField={updateMonitoredField}
+              onRecheckMonitored={refreshMonitored}
+              recheckingMonitoredDomain={recheckingMonitoredDomain}
             />
           </div>
         </div>
