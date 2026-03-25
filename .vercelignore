@@ -1,0 +1,11 @@
+.git
+.claude
+.env*
+node_modules
+ui/node_modules
+README.md
+domains.txt
+test-connection.js
+package-lock.json
+ui/package-lock.json
+*.log
