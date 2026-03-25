@@ -1,6 +1,7 @@
 import React, { useState, forwardRef } from 'react';
 import VerificationResultsSection from './VerificationResultsSection';
 import { FieldInfo, FieldInfoIcon } from './FieldInfo';
+import { MicIcon } from './icons';
 
 const MAX_WEIGHTED_WORDS = 5;
 /** Matches server.js /api/generate prompt length check */
@@ -137,6 +138,47 @@ const GeneratorTab = forwardRef(function GeneratorTab(
 ) {
   const hasResult = generationResult !== null;
   const [advancedOpen, setAdvancedOpen] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const [dictationLang, setDictationLang] = useState('en-US');
+
+  const handleDictate = () => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert('Speech recognition is not supported in this browser.');
+      return;
+    }
+
+    if (isListening) return;
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = dictationLang;
+    recognition.continuous = false;
+    recognition.interimResults = false;
+
+    recognition.onstart = () => setIsListening(true);
+    
+    recognition.onresult = (event) => {
+      const transcript = event.results[0][0].transcript;
+      setGenPrompt((prev) => {
+        const newPrompt = prev ? prev + ' ' + transcript : transcript;
+        return newPrompt.slice(0, MAX_PROMPT_CHARS);
+      });
+    };
+
+    recognition.onerror = (event) => {
+      console.error('Speech recognition error', event.error);
+      setIsListening(false);
+    };
+
+    recognition.onend = () => setIsListening(false);
+
+    try {
+      recognition.start();
+    } catch (err) {
+      console.error(err);
+      setIsListening(false);
+    }
+  };
 
   const handleToggleGroup = (domains, shouldSelect) => {
     domains.forEach((d) => {
@@ -177,18 +219,45 @@ const GeneratorTab = forwardRef(function GeneratorTab(
               profile bar—they apply when you verify availability.
             </p>
           </FieldInfo>
-          <textarea
-            ref={ref}
-            id="gen-prompt"
-            placeholder="e.g. A calm budgeting app for couples who want shared goals without the spreadsheet…"
-            value={genPrompt}
-            onChange={(e) => setGenPrompt(e.target.value)}
-            disabled={generating}
-            rows="3"
-            required
-            maxLength={MAX_PROMPT_CHARS}
-            aria-describedby="gen-prompt-char-count"
-          />
+          <div className="prompt-textarea-wrapper">
+            <textarea
+              ref={ref}
+              id="gen-prompt"
+              placeholder="e.g. A calm budgeting app for couples who want shared goals without the spreadsheet…"
+              value={genPrompt}
+              onChange={(e) => setGenPrompt(e.target.value)}
+              disabled={generating}
+              rows="3"
+              required
+              maxLength={MAX_PROMPT_CHARS}
+              aria-describedby="gen-prompt-char-count"
+            />
+            <div className="dictate-controls">
+              <select
+                className="dictate-lang-select"
+                value={dictationLang}
+                onChange={(e) => setDictationLang(e.target.value)}
+                disabled={generating || isListening}
+                title="Select dictation language"
+                aria-label="Select dictation language"
+              >
+                <option value="en-US">EN</option>
+                <option value="es-ES">ES</option>
+                <option value="fr-FR">FR</option>
+                <option value="pt-BR">PT</option>
+              </select>
+              <button
+                type="button"
+                className={`mic-btn ${isListening ? 'listening' : ''}`}
+                onClick={handleDictate}
+                disabled={generating}
+                aria-label="Dictate prompt"
+                title="Dictate prompt"
+              >
+                <MicIcon isListening={isListening} />
+              </button>
+            </div>
+          </div>
           <p
             id="gen-prompt-char-count"
             className={`prompt-char-count${genPrompt.length >= MAX_PROMPT_CHARS ? ' prompt-char-count--max' : ''}`}

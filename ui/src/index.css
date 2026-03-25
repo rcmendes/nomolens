@@ -820,7 +820,89 @@ header p {
 }
 
 textarea#gen-prompt {
-  padding: 1.15rem 1.35rem;
+  padding: 1.15rem 3rem 1.15rem 1.35rem;
+}
+
+.prompt-textarea-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.dictate-controls {
+  position: absolute;
+  top: 0.8rem;
+  right: 0.8rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.dictate-lang-select {
+  background: var(--glass-surface);
+  border: 1px solid var(--glass-border);
+  color: var(--text-main);
+  border-radius: 6px;
+  padding: 0.2rem 0.4rem;
+  font-size: 0.8rem;
+  cursor: pointer;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.dictate-lang-select option {
+  background-color: var(--bg-gradient-start);
+  color: var(--text-main);
+}
+
+.dictate-lang-select:focus,
+.dictate-lang-select:hover:not(:disabled) {
+  border-color: var(--primary);
+  background: var(--glass-surface-hover);
+}
+
+.dictate-lang-select:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.mic-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.mic-btn:hover:not(:disabled) {
+  color: var(--text-main);
+  background: var(--glass-surface-hover);
+}
+
+.mic-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.mic-btn.listening {
+  color: var(--error-main);
+  animation: pulse-mic 1.5s infinite;
+}
+
+@keyframes pulse-mic {
+  0% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+  }
 }
 
 .form-group input:focus,
