@@ -1,7 +1,9 @@
 import React, { useCallback, useMemo } from 'react';
 import { summarizeBulkResults, registrarSearchUrl, getEntryStatus } from './domainResultUtils';
+import { useToast } from './useToast';
 
 export default function ResultsCockpit({ bulkResults }) {
+  const toast = useToast();
   const { counts, bestPick } = useMemo(() => summarizeBulkResults(bulkResults), [bulkResults]);
 
   const availableDomains = useMemo(() => {
@@ -15,10 +17,13 @@ export default function ResultsCockpit({ bulkResults }) {
     if (availableDomains.length === 0) return;
     try {
       await navigator.clipboard.writeText(availableDomains.join('\n'));
+      toast.show(`Copied ${availableDomains.length} domain${availableDomains.length === 1 ? '' : 's'} to clipboard`, {
+        kind: 'success',
+      });
     } catch {
-      // ignore
+      toast.show('Could not copy to clipboard', { kind: 'danger' });
     }
-  }, [availableDomains]);
+  }, [availableDomains, toast]);
 
   const openBestRegistrar = useCallback(() => {
     const d = bestPick?.domain ?? availableDomains[0];

@@ -6,6 +6,9 @@ import FavoritesPanel from './FavoritesPanel';
 import TldProfileBar from './TldProfileBar';
 import CommandPalette from './CommandPalette';
 import { getEntryStatus } from './domainResultUtils';
+import { MoonIcon, SunIcon } from './icons';
+import { ToastProvider } from './ToastProvider';
+import { useToast } from './useToast';
 
 const API_BASE = import.meta.env.DEV ? 'http://localhost:3001' : '';
 
@@ -24,7 +27,8 @@ function normalizeFavoriteRow(f) {
   };
 }
 
-function App() {
+function AppInner() {
+  const toast = useToast();
   const [theme, setTheme] = useState(() =>
     typeof window !== 'undefined' && window.matchMedia?.('(prefers-color-scheme: light)').matches
       ? 'light'
@@ -41,6 +45,12 @@ function App() {
   const tabListRef = useRef(null);
 
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const isMac = useMemo(() => {
+    if (typeof navigator === 'undefined') return false;
+    const platform = navigator.platform || '';
+    return /Mac|iPhone|iPad|iPod/i.test(platform);
+  }, []);
+  const paletteShortcutLabel = isMac ? '⌘K' : 'Ctrl K';
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
@@ -612,17 +622,22 @@ function App() {
     if (available.length === 0) return;
     try {
       await navigator.clipboard.writeText(available.join('\n'));
+      toast.show(`Copied ${available.length} domain${available.length === 1 ? '' : 's'} to clipboard`, {
+        kind: 'success',
+      });
     } catch {
-      /* ignore */
+      toast.show('Could not copy to clipboard', { kind: 'danger' });
     }
-  }, [bulkResults]);
+  }, [bulkResults, toast]);
 
   const hasAvailableToCopy = useMemo(
     () => Object.entries(bulkResults).some(([, r]) => getEntryStatus(r) === 'available'),
     [bulkResults]
   );
 
-  const tldBarDisabled = loading || bulkVerifying || generating;
+  // Keep TLD profile interactive unless generation is in-flight.
+  // Search/verify operations snapshot selection at start, so mid-flight changes won't affect the current run.
+  const tldBarDisabled = generating;
 
   const onTabListKeyDown = (e) => {
     const order = ['search', 'generate', 'monitor'];
@@ -659,19 +674,19 @@ function App() {
           type="button"
           className="theme-toggle-btn"
           onClick={toggleTheme}
-          title="Toggle Theme"
+          title="Toggle theme"
           aria-label="Toggle colour theme"
         >
-          {theme === 'dark' ? '☀️' : '🌙'}
+          {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
         </button>
         <button
           type="button"
           className="command-palette-trigger-btn"
           onClick={() => setPaletteOpen(true)}
-          title="Command palette (⌘K)"
+          title={`Command palette (${paletteShortcutLabel})`}
           aria-label="Open command palette"
         >
-          ⌘K
+          {paletteShortcutLabel}
         </button>
       </div>
 
@@ -837,6 +852,8 @@ function App() {
               updateMonitoredField={updateMonitoredField}
               onRecheckMonitored={refreshMonitored}
               recheckingMonitoredDomain={recheckingMonitoredDomain}
+              addFavorite={addFavorite}
+              isFavorite={isFavorite}
             />
           </div>
         </div>
@@ -847,10 +864,18 @@ function App() {
           onRecheck={refreshFavorite}
           onUpdateFavorite={updateFavoriteField}
           recheckingDomain={recheckingDomain}
+          addMonitored={addMonitored}
+          isMonitored={isMonitored}
         />
       </div>
     </div>
   );
 }
 
-export default App;
+export default function App() {
+  return (
+    <ToastProvider>
+      <AppInner />
+    </ToastProvider>
+  );
+}

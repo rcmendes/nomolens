@@ -36,12 +36,16 @@ function DomainLeaf({ domain, selected, onToggle, disabled, bulkResults }) {
   }
 
   return (
-    <div
+    <button
+      type="button"
       className={`tree-leaf-card glass ${selected ? 'selected' : ''}`}
       onClick={(e) => {
         if (e.target.closest('.tree-checkbox-label')) return;
         onToggle(domain);
       }}
+      disabled={disabled}
+      aria-pressed={selected}
+      aria-label={`Toggle ${domain}`}
     >
       <label className="tree-checkbox-label">
         <input
@@ -54,7 +58,7 @@ function DomainLeaf({ domain, selected, onToggle, disabled, bulkResults }) {
         <span className="tree-domain-text">{domain}</span>
       </label>
       {statusBadge && <div className="leaf-badge-wrap">{statusBadge}</div>}
-    </div>
+    </button>
   );
 }
 
@@ -64,13 +68,19 @@ function DomainGroup({ label, domains, selectedDomains, onToggle, bulkVerifying,
 
   return (
     <div className="tree-group">
-      <div className="tree-group-header" onClick={() => onToggleGroup(domains, !allSelected)}>
+      <button
+        type="button"
+        className="tree-group-header"
+        onClick={() => onToggleGroup(domains, !allSelected)}
+        disabled={bulkVerifying}
+        aria-label={`${allSelected ? 'Deselect' : 'Select'} all variants for ${label}`}
+      >
         <span className={`tree-group-dot ${allSelected ? 'all' : someSelected ? 'some' : 'none'}`} />
         <span className="tree-group-label">{label}</span>
         <span className="tree-group-count">
           {domains.length} variant{domains.length !== 1 ? 's' : ''}
         </span>
-      </div>
+      </button>
       <div className="tree-leaves">
         {domains.map((d) => (
           <DomainLeaf
@@ -140,9 +150,9 @@ const GeneratorTab = forwardRef(function GeneratorTab(
   const showVerifyHint = selectedDomains.size > 0 && verifyDisabled && !bulkVerifying;
 
   return (
-    <section className="mode-section glass" style={{ animation: 'none', opacity: 1 }}>
+    <section className="mode-section mode-section--static glass">
       <h2 className="sr-only">Generate names with AI</h2>
-      <p style={{ marginBottom: '1.5rem', color: 'var(--text-muted)', textAlign: 'center' }}>
+      <p className="lead-muted-center">
         <SeedRootIcon />
         Describe what you are building in plain language—we suggest memorable name roots you can pair with the
         extensions you select in the bar above.
@@ -347,7 +357,7 @@ const GeneratorTab = forwardRef(function GeneratorTab(
       {generating && (
         <div className="loader-container">
           <div className="spinner" />
-          <p style={{ color: 'var(--text-muted)' }}>
+          <p className="text-muted">
             Asking Gemini for fresh angles—usually just a few seconds.
           </p>
         </div>

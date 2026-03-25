@@ -25,10 +25,10 @@ const DirectSearchTab = forwardRef(function DirectSearchTab(
   const showFullPageLoader = loading && Object.keys(bulkResults).length === 0;
 
   return (
-    <section className="mode-section glass" style={{ animation: 'none', opacity: 1 }}>
+    <section className="mode-section mode-section--static glass">
       <h2 className="sr-only">Direct Search</h2>
 
-      <p style={{ marginBottom: '1.5rem', color: 'var(--text-muted)', textAlign: 'center' }}>
+      <p className="lead-muted-center">
         Check availability across multiple TLDs at once.
       </p>
 
@@ -69,7 +69,7 @@ const DirectSearchTab = forwardRef(function DirectSearchTab(
       {showFullPageLoader && (
         <div className="loader-container">
           <div className="spinner" />
-          <p style={{ color: 'var(--text-muted)' }}>Querying registrars and WHOIS…</p>
+          <p className="text-muted">Querying registrars and WHOIS…</p>
         </div>
       )}
 

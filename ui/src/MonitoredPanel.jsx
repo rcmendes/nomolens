@@ -1,4 +1,6 @@
 import React, { useCallback, useMemo, useState } from 'react';
+import { BellIcon, StarIcon } from './icons';
+import { useToast } from './useToast';
 
 function statusLabel(status) {
   switch (status) {
@@ -48,11 +50,21 @@ export default function MonitoredPanel({
   onRecheck,
   onUpdateMonitored,
   recheckingDomain,
+  addFavorite,
+  isFavorite,
 }) {
   const isEmpty = monitored.length === 0;
+  const toast = useToast();
 
-  const handleExportJson = useCallback(() => exportJson(monitored), [monitored]);
-  const handleExportCsv = useCallback(() => exportCsv(monitored), [monitored]);
+  const handleExportJson = useCallback(() => {
+    exportJson(monitored);
+    toast.show('Exported monitor list as JSON', { kind: 'success' });
+  }, [monitored, toast]);
+
+  const handleExportCsv = useCallback(() => {
+    exportCsv(monitored);
+    toast.show('Exported monitor list as CSV', { kind: 'success' });
+  }, [monitored, toast]);
 
   const [filterStatuses, setFilterStatuses] = useState(
     new Set(['available', 'expiring-soon', 'taken', 'unavailable'])
@@ -110,7 +122,7 @@ export default function MonitoredPanel({
       <div className="favorites-panel-header">
         <span className="favorites-panel-title">
           <span className="monitored-bell-icon" aria-hidden>
-            🔔
+            <BellIcon size={16} />
           </span>
           Monitor list
         </span>
@@ -133,11 +145,11 @@ export default function MonitoredPanel({
       {isEmpty ? (
         <div className="favorites-empty">
           <span className="favorites-empty-icon monitored-empty-icon" aria-hidden>
-            🔕
+            <BellIcon size={22} off />
           </span>
           <p>No domains on your monitor list yet.</p>
           <p className="favorites-empty-hint">
-            Click 🔔 on any result to track it here (taken or available).
+            Monitor any result to track it here (taken or available).
           </p>
         </div>
       ) : (
@@ -244,6 +256,20 @@ export default function MonitoredPanel({
                   )}
                 </div>
                 <div className="favorites-item-actions">
+                  <button
+                    type="button"
+                    className={`favorites-cross-btn ${isFavorite?.(row.domain) ? 'active' : ''}`}
+                    onClick={() => addFavorite?.(row.domain, row)}
+                    disabled={!addFavorite || !isFavorite || isFavorite(row.domain)}
+                    aria-label={
+                      isFavorite?.(row.domain)
+                        ? `${row.domain} is already in your favorites`
+                        : `Add ${row.domain} to favorites`
+                    }
+                    title={isFavorite?.(row.domain) ? 'Already in favorites' : 'Add to favorites'}
+                  >
+                    <StarIcon filled={isFavorite?.(row.domain)} size={18} />
+                  </button>
                   <button
                     type="button"
                     className="favorites-recheck-btn"

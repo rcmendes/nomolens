@@ -1,7 +1,26 @@
 :root {
+  /* Brand */
   --primary: #4F46E5;
   --primary-hover: #4338CA;
   --secondary: #10B981;
+
+  /* Semantic (mapped per-theme where needed) */
+  --color-accent: var(--primary);
+  --color-accent-hover: var(--primary-hover);
+  --color-success: var(--secondary);
+  --color-warning: #f59e0b;
+  --color-danger: #ef4444;
+  --color-favorite: #f59e0b;
+
+  --color-on-accent: #ffffff;
+  --color-on-success: #ffffff;
+  --color-on-warning: #111827;
+  --color-on-danger: #ffffff;
+
+  /* Interaction */
+  --focus-ring: rgba(79, 70, 229, 0.35);
+  --focus-ring-soft: rgba(79, 70, 229, 0.2);
+
   --font-family: 'Outfit', sans-serif;
   /* Alias so both names work throughout JSX and CSS */
   --text-color: var(--text-main);
@@ -21,6 +40,25 @@
   --card-bg: rgba(255, 255, 255, 0.05);
   --card-hover: rgba(255, 255, 255, 0.08);
   --box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+
+  /* Surfaces & overlays */
+  --overlay-backdrop: rgba(15, 23, 42, 0.55);
+
+  /* Status tints */
+  --success-bg: rgba(16, 185, 129, 0.12);
+  --success-border: rgba(16, 185, 129, 0.4);
+  --success-fg: #34d399;
+  --danger-bg: rgba(239, 68, 68, 0.12);
+  --danger-border: rgba(239, 68, 68, 0.4);
+  --danger-fg: #f87171;
+  --warning-bg: rgba(245, 158, 11, 0.12);
+  --warning-border: rgba(245, 158, 11, 0.4);
+  --warning-fg: #fbbf24;
+  --neutral-bg: rgba(100, 116, 139, 0.12);
+  --neutral-border: rgba(100, 116, 139, 0.4);
+  --neutral-fg: var(--text-muted);
+
+  --spinner-track: rgba(255, 255, 255, 0.12);
 }
 
 [data-theme="light"] {
@@ -29,19 +67,43 @@
   --glass-bg: rgba(255, 255, 255, 0.6);
   --glass-border: rgba(0, 0, 0, 0.1);
   --text-main: #0f172a;
-  --text-muted: #64748b;
+  /* Slightly darker than slate-500 for AA on tinted backgrounds */
+  --text-muted: #475569;
   --input-bg: rgba(255, 255, 255, 0.8);
   --field-info-bg: #eef2ff;
   --field-info-border: rgba(79, 70, 229, 0.2);
   --card-bg: rgba(255, 255, 255, 0.7);
   --card-hover: rgba(255, 255, 255, 0.9);
   --box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.1);
+
+  --overlay-backdrop: rgba(15, 23, 42, 0.35);
+
+  --success-bg: rgba(16, 185, 129, 0.12);
+  --success-border: rgba(16, 185, 129, 0.35);
+  --success-fg: #047857;
+  --danger-bg: rgba(239, 68, 68, 0.12);
+  --danger-border: rgba(239, 68, 68, 0.35);
+  --danger-fg: #b91c1c;
+  --warning-bg: rgba(245, 158, 11, 0.14);
+  --warning-border: rgba(245, 158, 11, 0.35);
+  --warning-fg: #b45309;
+  --neutral-bg: rgba(100, 116, 139, 0.12);
+  --neutral-border: rgba(100, 116, 139, 0.3);
+  --neutral-fg: #334155;
+
+  --spinner-track: rgba(15, 23, 42, 0.12);
 }
 
 * {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+}
+
+/* Consistent focus ring for all interactive controls */
+:where(button, [role="button"], a, input, textarea, select):focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--focus-ring);
 }
 
 body {
@@ -53,6 +115,64 @@ body {
   flex-direction: column;
   overflow-x: hidden;
 }
+
+/* Toasts */
+.toast-viewport {
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 2000;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: min(360px, calc(100vw - 2rem));
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.75rem 0.85rem;
+  border-radius: 14px;
+  border: 1px solid var(--glass-border);
+  background: color-mix(in oklab, var(--glass-bg) 92%, black);
+  box-shadow: var(--box-shadow);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+[data-theme="light"] .toast {
+  background: color-mix(in oklab, var(--glass-bg) 92%, white);
+}
+
+.toast-text {
+  color: var(--text-main);
+  font-size: 0.85rem;
+  line-height: 1.25;
+}
+
+.toast-dismiss {
+  background: transparent;
+  border: 1px solid var(--glass-border);
+  color: var(--text-muted);
+  width: 28px;
+  height: 28px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s, background 0.2s;
+  flex: 0 0 auto;
+}
+
+.toast-dismiss:hover {
+  color: var(--text-main);
+  border-color: var(--primary);
+  background: var(--input-bg);
+}
+
+.toast--success { border-color: var(--success-border); }
+.toast--danger { border-color: var(--danger-border); }
+.toast--warning { border-color: var(--warning-border); }
 
 /* ── Page shell — wraps layout-wrapper and sets the background ── */
 .page-shell {
@@ -92,7 +212,7 @@ header {
 h1 {
   font-size: 3.5rem;
   font-weight: 700;
-  background: linear-gradient(to right, #a78bfa, #2dd4bf);
+  background: linear-gradient(to right, #818cf8, #34d399);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -212,7 +332,7 @@ header p {
 }
 
 .tab-btn.active {
-  color: #fff;
+  color: var(--color-on-accent);
   background: var(--primary);
   box-shadow: 0 4px 12px rgba(79, 70, 229, 0.4);
 }
@@ -245,7 +365,7 @@ header p {
 
 .search-input:focus {
   border-color: var(--primary);
-  box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.2);
+  box-shadow: 0 0 0 4px var(--focus-ring-soft);
 }
 
 .search-btn {
@@ -295,21 +415,21 @@ header p {
 }
 
 .status-available {
-  background: rgba(16, 185, 129, 0.2);
-  color: #34d399;
-  border: 1px solid rgba(52, 211, 153, 0.3);
+  background: var(--success-bg);
+  color: var(--success-fg);
+  border: 1px solid color-mix(in oklab, var(--success-fg) 35%, transparent);
 }
 
 .status-taken {
-  background: rgba(239, 68, 68, 0.2);
-  color: #f87171;
-  border: 1px solid rgba(248, 113, 113, 0.3);
+  background: var(--danger-bg);
+  color: var(--danger-fg);
+  border: 1px solid color-mix(in oklab, var(--danger-fg) 35%, transparent);
 }
 
 .status-error {
-  background: rgba(245, 158, 11, 0.2);
-  color: #fbbf24;
-  border: 1px solid rgba(251, 191, 36, 0.3);
+  background: var(--warning-bg);
+  color: var(--warning-fg);
+  border: 1px solid color-mix(in oklab, var(--warning-fg) 35%, transparent);
 }
 
 .domain-title {
@@ -321,7 +441,7 @@ header p {
 
 .domain-price {
   font-size: 1.5rem;
-  color: #a78bfa;
+  color: color-mix(in oklab, var(--primary) 70%, white);
   font-weight: 500;
   margin-bottom: 2rem;
 }
@@ -360,12 +480,12 @@ header p {
   padding: 1.5rem;
   background: var(--card-bg);
   border-radius: 12px;
-  border-left: 4px solid #a78bfa;
+  border-left: 4px solid color-mix(in oklab, var(--primary) 70%, white);
 }
 
 .restrictions-box h3 {
   font-size: 1rem;
-  color: #a78bfa;
+  color: color-mix(in oklab, var(--primary) 70%, white);
   margin-bottom: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 1px;
@@ -397,7 +517,7 @@ header p {
 .spinner {
   width: 50px;
   height: 50px;
-  border: 3px solid rgba(255, 255, 255, 0.1);
+  border: 3px solid var(--spinner-track);
   border-radius: 50%;
   border-top-color: var(--secondary);
   animation: spin 1s ease-in-out infinite;
@@ -406,11 +526,11 @@ header p {
 
 /* Error State */
 .error-msg {
-  color: #f87171;
-  background: rgba(239, 68, 68, 0.1);
+  color: var(--danger-fg);
+  background: var(--danger-bg);
   padding: 1rem 2rem;
   border-radius: 12px;
-  border: 1px solid rgba(248, 113, 113, 0.2);
+  border: 1px solid color-mix(in oklab, var(--danger-fg) 25%, transparent);
   margin-top: 1rem;
   text-align: center;
   animation: fadeIn 0.3s forwards;
@@ -422,9 +542,9 @@ header p {
 
 .retry-btn {
   background: none;
-  border: 1px solid rgba(248, 113, 113, 0.5);
+  border: 1px solid color-mix(in oklab, var(--danger-fg) 55%, transparent);
   border-radius: 8px;
-  color: #f87171;
+  color: var(--danger-fg);
   font-family: var(--font-family);
   font-size: 0.85rem;
   font-weight: 600;
@@ -434,7 +554,7 @@ header p {
   flex-shrink: 0;
 }
 .retry-btn:hover {
-  background: rgba(248, 113, 113, 0.15);
+  background: color-mix(in oklab, var(--danger-fg) 14%, transparent);
 }
 
 /* Animations */
@@ -471,6 +591,29 @@ header p {
   animation: fadeInUp 0.8s ease-out forwards;
 }
 
+.mode-section--static {
+  animation: none !important;
+  opacity: 1 !important;
+}
+
+.lead-muted-center {
+  margin-bottom: 1.5rem;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.text-muted {
+  color: var(--text-muted);
+}
+
+.mb-1 {
+  margin-bottom: 0.5rem;
+}
+
+.mb-6 {
+  margin-bottom: 1.5rem;
+}
+
 .mode-section h2 {
   font-size: 2rem;
   font-weight: 700;
@@ -498,7 +641,7 @@ header p {
 }
 
 .required {
-  color: #f87171;
+  color: var(--danger-fg);
 }
 
 /* Field info toggle (Generate tab, etc.) */
@@ -551,7 +694,7 @@ header p {
 
 .field-info-btn:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.35);
+  box-shadow: 0 0 0 3px var(--focus-ring);
   color: var(--primary);
 }
 
@@ -595,11 +738,11 @@ header p {
 }
 
 .prompt-char-count--max {
-  color: #f59e0b;
+  color: var(--warning-fg);
 }
 
 [data-theme="light"] .prompt-char-count--max {
-  color: #d97706;
+  color: var(--warning-fg);
 }
 
 .field-info-icon-root {
@@ -659,7 +802,7 @@ header p {
 .form-group input:focus,
 .form-group textarea:focus {
   border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
+  box-shadow: 0 0 0 3px var(--focus-ring-soft);
 }
 
 .form-row {
@@ -1005,7 +1148,7 @@ header p {
 .tld-chip:hover:not(:disabled) {
   background: var(--card-hover);
   color: var(--text-main);
-  border-color: rgba(255, 255, 255, 0.2);
+  border-color: color-mix(in oklab, var(--text-main) 20%, var(--glass-border));
 }
 
 .tld-chip.selected {
@@ -1022,7 +1165,7 @@ header p {
 
 .tld-chip.custom {
   background: var(--secondary);
-  border-color: #059669;
+  border-color: color-mix(in oklab, var(--secondary) 75%, black);
 }
 
 .tld-chip:disabled {
@@ -1107,7 +1250,7 @@ header p {
   transition: background 0.2s;
 }
 .tree-group-dot.all  { background: var(--primary); }
-.tree-group-dot.some { background: #a78bfa; }
+.tree-group-dot.some { background: color-mix(in oklab, var(--primary) 55%, white); }
 .tree-group-dot.none { background: var(--glass-border); }
 
 .tree-group-label {
@@ -1234,7 +1377,7 @@ header p {
 }
 
 .status-pill:hover {
-  border-color: rgba(255, 255, 255, 0.2);
+  border-color: color-mix(in oklab, var(--text-main) 18%, var(--glass-border));
 }
 
 .status-pill.active.free {
@@ -1299,6 +1442,31 @@ header p {
   display: flex;
   flex-direction: column;
   gap: 2px;
+}
+
+.multiselect-actions {
+  display: flex;
+  gap: 0.35rem;
+  padding: 0.25rem 0.25rem 0.1rem;
+}
+
+.multiselect-action-btn {
+  flex: 0 0 auto;
+  padding: 0.3rem 0.55rem;
+  border-radius: 8px;
+  border: 1px solid var(--glass-border);
+  background: var(--input-bg);
+  color: var(--text-main);
+  font-family: var(--font-family);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.multiselect-action-btn:hover {
+  background: var(--card-hover);
+  border-color: var(--primary);
 }
 
 .multiselect-item {
@@ -1430,7 +1598,7 @@ header p {
 }
 
 .favorites-star-icon {
-  color: #f59e0b;
+  color: var(--color-favorite);
   font-size: 1.1rem;
 }
 
@@ -1566,8 +1734,8 @@ header p {
 }
 
 .favorites-remove-btn:hover {
-  color: #f87171;
-  background: rgba(248, 113, 113, 0.1);
+  color: var(--danger-fg);
+  background: color-mix(in oklab, var(--danger-fg) 12%, transparent);
 }
 
 /* ── Star (favorite) toggle button on result cards ──────────────────────── */
@@ -1585,22 +1753,22 @@ header p {
 }
 
 .fav-star-btn:hover {
-  color: #f59e0b;
-  border-color: #f59e0b;
-  background: rgba(245, 158, 11, 0.1);
+  color: var(--color-favorite);
+  border-color: var(--color-favorite);
+  background: color-mix(in oklab, var(--color-favorite) 12%, transparent);
   transform: scale(1.1);
 }
 
 .fav-star-btn.faved {
-  color: #f59e0b;
-  border-color: #f59e0b;
-  background: rgba(245, 158, 11, 0.12);
+  color: var(--color-favorite);
+  border-color: var(--color-favorite);
+  background: color-mix(in oklab, var(--color-favorite) 14%, transparent);
 }
 
 .fav-star-btn.faved:hover {
-  color: #ef4444;
-  border-color: #ef4444;
-  background: rgba(239, 68, 68, 0.1);
+  color: var(--danger-fg);
+  border-color: var(--danger-fg);
+  background: color-mix(in oklab, var(--danger-fg) 12%, transparent);
 }
 
 .compact-actions {
@@ -1628,14 +1796,14 @@ header p {
 .monitor-btn:hover {
   color: var(--secondary);
   border-color: var(--secondary);
-  background: rgba(16, 185, 129, 0.1);
+  background: color-mix(in oklab, var(--secondary) 12%, transparent);
   transform: scale(1.1);
 }
 
 .monitor-btn.active {
   color: var(--secondary);
   border-color: var(--secondary);
-  background: rgba(16, 185, 129, 0.12);
+  background: color-mix(in oklab, var(--secondary) 14%, transparent);
 }
 
 .monitor-toolbar {
@@ -1788,7 +1956,7 @@ header p {
   position: fixed;
   inset: 0;
   z-index: 1000;
-  background: rgba(15, 23, 42, 0.55);
+  background: var(--overlay-backdrop);
   display: flex;
   align-items: flex-start;
   justify-content: center;
@@ -2048,6 +2216,38 @@ header p {
   align-items: center;
   gap: 0.35rem;
   flex-shrink: 0;
+}
+
+.favorites-cross-btn {
+  background: none;
+  border: 1px solid var(--glass-border);
+  color: var(--text-muted);
+  width: 32px;
+  height: 28px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.favorites-cross-btn:hover:not(:disabled) {
+  color: var(--text-main);
+  border-color: var(--primary);
+  background: var(--card-hover);
+}
+
+.favorites-cross-btn.active {
+  color: var(--text-main);
+  border-color: var(--primary);
+  background: color-mix(in oklab, var(--primary) 14%, transparent);
+}
+
+.favorites-cross-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .favorites-recheck-btn {

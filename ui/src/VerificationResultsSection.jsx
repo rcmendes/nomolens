@@ -9,6 +9,7 @@ import React, {
 } from 'react';
 import { getEntryStatus } from './domainResultUtils';
 import ResultsCockpit from './ResultsCockpit';
+import { BellIcon, RefreshIcon, StarIcon } from './icons';
 
 function formatCheckedAt(iso) {
   if (!iso) return null;
@@ -94,7 +95,7 @@ function VerificationCard({
                 aria-label={`Refresh check for ${domain}`}
                 title="Refresh this check"
               >
-                ↻
+                <RefreshIcon size={16} />
               </button>
             )}
           </div>
@@ -146,7 +147,7 @@ function VerificationCard({
               aria-label={monitoring ? `Stop monitoring ${domain}` : `Monitor ${domain}`}
               title={monitoring ? 'Stop monitoring' : 'Monitor domain'}
             >
-              {monitoring ? '🔔' : '🔕'}
+              <BellIcon off={!monitoring} size={18} />
             </button>
           )}
 
@@ -157,7 +158,7 @@ function VerificationCard({
               aria-label={faved ? `Remove ${domain} from favorites` : `Add ${domain} to favorites`}
               title={faved ? 'Remove from favorites' : 'Add to favorites'}
             >
-              {faved ? '★' : '☆'}
+              <StarIcon filled={faved} size={18} />
             </button>
           )}
         </div>
@@ -206,6 +207,9 @@ const VerificationResultsSection = forwardRef(function VerificationResultsSectio
     () => allDomainNames.filter((d) => !deselectedDomains.has(d)).length,
     [allDomainNames, deselectedDomains]
   );
+
+  const selectAllDomains = useCallback(() => setDeselectedDomains(new Set()), []);
+  const clearAllDomains = useCallback(() => setDeselectedDomains(new Set(allDomainNames)), [allDomainNames]);
 
   useImperativeHandle(
     ref,
@@ -318,7 +322,7 @@ const VerificationResultsSection = forwardRef(function VerificationResultsSectio
     >
       <ResultsCockpit bulkResults={bulkResults} />
 
-      <h3 style={{ marginBottom: '1.5rem', fontSize: '1.2rem', color: 'var(--text-main)' }}>
+      <h3 className="mb-6" style={{ fontSize: '1.2rem', color: 'var(--text-main)' }}>
         Verification Results
       </h3>
 
@@ -378,6 +382,14 @@ const VerificationResultsSection = forwardRef(function VerificationResultsSectio
             </button>
             {isDropdownOpen && (
               <div className="multiselect-dropdown" role="listbox" aria-multiselectable="true">
+                <div className="multiselect-actions" role="group" aria-label="Domain selection shortcuts">
+                  <button type="button" className="multiselect-action-btn" onClick={selectAllDomains}>
+                    Select all
+                  </button>
+                  <button type="button" className="multiselect-action-btn" onClick={clearAllDomains}>
+                    Select none
+                  </button>
+                </div>
                 <input
                   type="search"
                   className="multiselect-search"
@@ -452,7 +464,7 @@ const VerificationResultsSection = forwardRef(function VerificationResultsSectio
             />
           ))
         ) : (
-          <p style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
+          <p style={{ textAlign: 'center', padding: '2rem' }} className="text-muted">
             No results match your filters.
           </p>
         )}

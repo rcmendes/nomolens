@@ -7,12 +7,14 @@ export default function MonitorTab({
   updateMonitoredField,
   onRecheckMonitored,
   recheckingMonitoredDomain,
+  addFavorite,
+  isFavorite,
 }) {
   return (
-    <section className="mode-section glass" style={{ animation: 'none', opacity: 1 }}>
+    <section className="mode-section mode-section--static glass">
       <div className="monitor-header">
-        <h2 style={{ marginBottom: '0.5rem' }}>Monitor List</h2>
-        <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
+        <h2 className="mb-1">Monitor List</h2>
+        <p className="text-muted mb-6" style={{ fontSize: '0.9rem' }}>
           Keep track of domains you care about, even if they are currently taken. Re-check anytime
           for status updates.
         </p>
@@ -24,6 +26,8 @@ export default function MonitorTab({
         onRecheck={onRecheckMonitored}
         onUpdateMonitored={updateMonitoredField}
         recheckingDomain={recheckingMonitoredDomain}
+        addFavorite={addFavorite}
+        isFavorite={isFavorite}
       />
     </section>
   );

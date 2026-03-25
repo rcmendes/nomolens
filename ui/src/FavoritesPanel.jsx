@@ -1,4 +1,6 @@
 import React, { useCallback } from 'react';
+import { BellIcon, StarIcon } from './icons';
+import { useToast } from './useToast';
 
 function statusLabel(status) {
   switch (status) {
@@ -48,17 +50,30 @@ export default function FavoritesPanel({
   onRecheck,
   onUpdateFavorite,
   recheckingDomain,
+  addMonitored,
+  isMonitored,
 }) {
+  const toast = useToast();
   const isEmpty = favorites.length === 0;
 
-  const handleExportJson = useCallback(() => exportJson(favorites), [favorites]);
-  const handleExportCsv = useCallback(() => exportCsv(favorites), [favorites]);
+  const handleExportJson = useCallback(() => {
+    exportJson(favorites);
+    toast.show('Exported favorites as JSON', { kind: 'success' });
+  }, [favorites, toast]);
+
+  const handleExportCsv = useCallback(() => {
+    exportCsv(favorites);
+    toast.show('Exported favorites as CSV', { kind: 'success' });
+  }, [favorites, toast]);
 
   return (
     <aside className="favorites-panel glass" aria-label="Favorite domains">
       <div className="favorites-panel-header">
         <span className="favorites-panel-title">
-          <span className="favorites-star-icon">★</span> Favorites
+          <span className="favorites-star-icon" aria-hidden>
+            <StarIcon size={16} />
+          </span>
+          Favorites
         </span>
         {favorites.length > 0 && (
           <span className="favorites-count">{favorites.length}</span>
@@ -78,9 +93,11 @@ export default function FavoritesPanel({
 
       {isEmpty ? (
         <div className="favorites-empty">
-          <span className="favorites-empty-icon">☆</span>
+          <span className="favorites-empty-icon" aria-hidden>
+            <StarIcon size={22} filled={false} />
+          </span>
           <p>No favorites yet.</p>
-          <p className="favorites-empty-hint">Click ★ on any result to save it here.</p>
+          <p className="favorites-empty-hint">Star any result to save it here.</p>
         </div>
       ) : (
         <ul className="favorites-list" role="list">
@@ -111,6 +128,20 @@ export default function FavoritesPanel({
                   )}
                 </div>
                 <div className="favorites-item-actions">
+                  <button
+                    type="button"
+                    className={`favorites-cross-btn ${isMonitored?.(fav.domain) ? 'active' : ''}`}
+                    onClick={() => addMonitored?.(fav.domain, fav)}
+                    disabled={!addMonitored || !isMonitored || isMonitored(fav.domain)}
+                    aria-label={
+                      isMonitored?.(fav.domain)
+                        ? `${fav.domain} is already on your monitor list`
+                        : `Add ${fav.domain} to monitor list`
+                    }
+                    title={isMonitored?.(fav.domain) ? 'Already on monitor list' : 'Add to monitor list'}
+                  >
+                    <BellIcon off={isMonitored?.(fav.domain)} size={18} />
+                  </button>
                   <button
                     type="button"
                     className="favorites-recheck-btn"
