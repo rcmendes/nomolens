@@ -97,8 +97,8 @@ function VerificationCard({ domain, result, isFavorite, addFavorite, removeFavor
           )}
         </div>
 
-        {/* Favorite star */}
-        {!result.loading && !result.error && (
+        {/* Favorite star - only for free domains, or if already faved */}
+        {!result.loading && !result.error && (status === 'available' || faved) && (
           <button
             className={`fav-star-btn ${faved ? 'faved' : ''}`}
             onClick={handleFavToggle}

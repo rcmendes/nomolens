@@ -166,48 +166,61 @@ app.get('/api/check', apiLimiter, async (req, res) => {
 // ── Name-generation endpoint ─────────────────────────────────────────────────
 app.post('/api/generate', apiLimiter, async (req, res) => {
   try {
-    const { name, prefixes, suffixes, prompt, tlds, exclude } = req.body;
+    const { keywords, prefixes, suffixes, prompt, tlds, exclude } = req.body;
 
-    if (!name || typeof name !== 'string') {
-      return res.status(400).json({ error: 'Base name is required and must be a string' });
+    if (!prompt || typeof prompt !== 'string' || !prompt.trim()) {
+      return res.status(400).json({ error: 'Product context prompt is required and must be a non-empty string' });
     }
-    if (name.trim().length > 100) {
-      return res.status(400).json({ error: 'Base name must be 100 characters or fewer' });
-    }
-    if (prompt && (typeof prompt !== 'string' || prompt.length > 1000)) {
-      return res.status(400).json({ error: 'Prompt must be a string of 1000 characters or fewer' });
+    if (prompt.length > 1000) {
+      return res.status(400).json({ error: 'Prompt must be 1000 characters or fewer' });
     }
     if (
+      (keywords && !Array.isArray(keywords)) ||
       (prefixes && !Array.isArray(prefixes)) ||
       (suffixes && !Array.isArray(suffixes)) ||
-      (tlds && !Array.isArray(tlds))
+      (tlds && !Array.isArray(tlds)) ||
+      (exclude && !Array.isArray(exclude))
     ) {
-      return res.status(400).json({ error: 'prefixes, suffixes, and tlds must be arrays' });
+      return res.status(400).json({ error: 'keywords, prefixes, suffixes, tlds, and exclude must be arrays when provided' });
     }
 
-    const cleanName = name.trim().toLowerCase().replace(/\s+/g, '');
+    const normalizedKeywords = (keywords || [])
+      .filter((k) => typeof k === 'string')
+      .map((k) => k.trim().toLowerCase())
+      .filter(Boolean);
+
+    if (normalizedKeywords.length > 5) {
+      return res.status(400).json({ error: 'keywords supports up to 5 words' });
+    }
+
+    if (normalizedKeywords.some((k) => /\s/.test(k))) {
+      return res.status(400).json({ error: 'Each keyword must be a single token with no spaces' });
+    }
+
+    const cleanPrompt = prompt.trim();
     const activeTlds = (tlds && tlds.length > 0) ? tlds : ['.com', '.io', '.net'];
 
-    // Step 1 – ask Gemini for 10 creative base names (no TLDs)
-    const baseSuggestions = await generateBaseNames({ name: cleanName, prefixes, suffixes, prompt, exclude });
+    // Step 1 – ask Gemini for creative base names (no TLDs)
+    const baseSuggestions = await generateBaseNames({
+      prompt: cleanPrompt,
+      keywords: normalizedKeywords,
+      prefixes,
+      suffixes,
+      exclude,
+    });
 
     // Step 2 – apply TLDs server-side to keep control over the structure
-    const original = {
-      base: cleanName,
-      domains: activeTlds.map((tld) => `${cleanName}${tld}`),
-    };
-
     const suggestions = baseSuggestions.map((base) => ({
       base,
       domains: activeTlds.map((tld) => `${base}${tld}`),
     }));
 
     if (isDev) {
-      const total = original.domains.length + suggestions.reduce((acc, s) => acc + s.domains.length, 0);
+      const total = suggestions.reduce((acc, s) => acc + s.domains.length, 0);
       console.info(`[DEV] /api/generate → ${suggestions.length} suggestions, ${total} total domains`);
     }
 
-    res.json({ original, suggestions });
+    res.json({ suggestions });
   } catch (error) {
     console.error('Error in /api/generate:', error);
     res.status(500).json({ error: 'Failed to generate domain names.' });

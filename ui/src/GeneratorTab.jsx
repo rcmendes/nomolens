@@ -2,6 +2,26 @@ import React from 'react';
 import VerificationResultsSection from './VerificationResultsSection';
 
 const PREDEFINED_TLDS = ['.com', '.io', '.co', '.ai', '.net', '.org', '.app', '.dev', '.tech', '.me', '.pro'];
+const MAX_WEIGHTED_WORDS = 5;
+
+function SeedRootIcon() {
+  return (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden="true"
+      style={{ marginRight: '0.45rem', verticalAlign: 'text-bottom' }}
+    >
+      <path d="M11 13v6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+      <path d="M11 19c-1.5 0-3-.7-4-1.9" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+      <path d="M11 19c1.5 0 3-.7 4-1.9" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+      <path d="M11 13c-2.4 0-4.4-2-4.4-4.4V7.8h.8c2.3 0 4.2 1.9 4.2 4.2V13Z" fill="currentColor" opacity="0.7" />
+      <path d="M11 13c2.4 0 4.4-2 4.4-4.4V7.8h-.8c-2.3 0-4.2 1.9-4.2 4.2V13Z" fill="currentColor" />
+    </svg>
+  );
+}
 
 // ── Helper: a single domain leaf card ─────────────────────────────────────────
 function DomainLeaf({ domain, selected, onToggle, disabled, bulkResults }) {
@@ -64,8 +84,14 @@ function DomainGroup({ label, domains, selectedDomains, onToggle, bulkVerifying,
 
 // ── Main GeneratorTab ─────────────────────────────────────────────────────────
 export default function GeneratorTab({
-  genName, setGenName,
   genPrompt, setGenPrompt,
+  genKeywords,
+  genKeywordInput,
+  setGenKeywordInput,
+  genKeywordError,
+  setGenKeywordError,
+  handleAddGenKeyword,
+  handleRemoveGenKeyword,
   genPrefixes, setGenPrefixes,
   genSuffixes, setGenSuffixes,
   generating,
@@ -78,8 +104,9 @@ export default function GeneratorTab({
   selectedDomains, toggleDomainSelection,
   bulkVerifying,
   bulkResults,
-  handleBulkVerify,
-  verifyProgress,
+   handleBulkVerify,
+   hasSelectionChanged,
+   verifyProgress,
   onGenerate,
   favorites, addFavorite, removeFavorite, isFavorite,
 }) {
@@ -98,27 +125,15 @@ export default function GeneratorTab({
     <section className="mode-section glass" style={{ animation: 'none', opacity: 1 }}>
       <h2 className="sr-only">Idea Generator</h2>
       <p style={{ marginBottom: '1.5rem', color: 'var(--text-muted)', textAlign: 'center' }}>
-        Let AI brainstorm domain names based on your product's context.
+        <SeedRootIcon />
+        Let AI grow domain names from your product context and weighted concept words.
       </p>
 
       <form className="generator-form" onSubmit={onGenerate}>
         <div className="form-group">
-          <label htmlFor="gen-name">
-            Base Name <span className="required">*</span>
+          <label htmlFor="gen-prompt">
+            Product Context / Prompt <span className="required">*</span>
           </label>
-          <input
-            id="gen-name"
-            type="text"
-            placeholder="e.g. Tamojunto"
-            value={genName}
-            onChange={(e) => setGenName(e.target.value)}
-            disabled={generating}
-            required
-          />
-        </div>
-
-        <div className="form-group">
-          <label htmlFor="gen-prompt">Product Context / Prompt</label>
           <textarea
             id="gen-prompt"
             placeholder="e.g. A marketplace connecting local services…"
@@ -126,7 +141,59 @@ export default function GeneratorTab({
             onChange={(e) => setGenPrompt(e.target.value)}
             disabled={generating}
             rows="3"
+            required
           />
+        </div>
+
+        <div className="form-group tld-section">
+          <label>Weighted Concept Words (Optional)</label>
+          <div className="tld-chips">
+            {genKeywords.map((keyword) => (
+              <button
+                key={keyword}
+                type="button"
+                className="tld-chip selected custom"
+                onClick={() => handleRemoveGenKeyword(keyword)}
+                disabled={generating}
+                title="Remove weighted word"
+              >
+                {keyword} &times;
+              </button>
+            ))}
+          </div>
+          <div className="custom-tld-input">
+            <input
+              type="text"
+              placeholder="Add weighted word (no spaces)"
+              value={genKeywordInput}
+              onChange={(e) => {
+                setGenKeywordInput(e.target.value);
+                if (genKeywordError) setGenKeywordError('');
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  handleAddGenKeyword(e);
+                }
+              }}
+              disabled={generating}
+              aria-label="Weighted concept words input"
+            />
+            <button
+              type="button"
+              className="add-tld-btn"
+              onClick={handleAddGenKeyword}
+              disabled={generating || !genKeywordInput.trim() || genKeywords.length >= MAX_WEIGHTED_WORDS}
+            >
+              Add
+            </button>
+          </div>
+          <p style={{ marginTop: '0.35rem', color: 'var(--text-muted)', fontSize: '0.78rem' }}>
+            {genKeywords.length}/{MAX_WEIGHTED_WORDS} words added. Each word is treated as a higher-priority concept signal.
+          </p>
+          {genKeywordError && (
+            <p className="tld-error-msg" role="alert">{genKeywordError}</p>
+          )}
         </div>
 
         <div className="form-row">
@@ -212,7 +279,7 @@ export default function GeneratorTab({
         <button
           type="submit"
           className="search-btn generate-btn"
-          disabled={generating || !genName.trim()}
+          disabled={generating || !genPrompt.trim()}
         >
           {generating ? 'Brainstorming…' : 'Generate with AI'}
         </button>
@@ -233,38 +300,23 @@ export default function GeneratorTab({
       {hasResult && (
         <div className="generated-results">
           <h3 style={{ fontSize: '1.2rem', marginBottom: '1.25rem' }}>
-            Ideas for &ldquo;{genName}&rdquo;
+            AI-generated domain ideas
             <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginLeft: '0.75rem', fontWeight: 400 }}>
-              {1 + generationResult.suggestions.length} groups ·{' '}
-              {generationResult.original.domains.length +
-                generationResult.suggestions.reduce((a, s) => a + s.domains.length, 0)} domains
+              {generationResult.suggestions.length} groups ·{' '}
+              {generationResult.suggestions.reduce((a, s) => a + s.domains.length, 0)} domains
             </span>
           </h3>
 
           <div className="tree-container">
             {/* Root node */}
             <div className="tree-root">
-              <span className="tree-root-name">{genName}</span>
+              <span className="tree-root-name">Generated Ideas</span>
             </div>
 
             <div className="tree-branches">
-              {/* Original name branch */}
-              <div className="tree-branch">
-                <div className="tree-line" />
-                <DomainGroup
-                  label={`${generationResult.original.base} (original)`}
-                  domains={generationResult.original.domains}
-                  selectedDomains={selectedDomains}
-                  onToggle={toggleDomainSelection}
-                  bulkVerifying={bulkVerifying}
-                  bulkResults={bulkResults}
-                  onToggleGroup={handleToggleGroup}
-                />
-              </div>
-
               {/* AI suggestion branches */}
               {generationResult.suggestions.map((suggestion, idx) => (
-                <div key={suggestion.base} className="tree-branch">
+                <div key={`${suggestion.base}-${idx}`} className="tree-branch">
                   <div className="tree-line" />
                   <DomainGroup
                     label={`${suggestion.base}`}
@@ -291,7 +343,7 @@ export default function GeneratorTab({
               <button
                 className="verify-btn"
                 onClick={handleBulkVerify}
-                disabled={bulkVerifying}
+                disabled={bulkVerifying || !hasSelectionChanged}
               >
                 {bulkVerifying
                   ? 'Verifying…'

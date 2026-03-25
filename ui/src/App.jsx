@@ -191,24 +191,35 @@ function App() {
   };
 
   // ── Generator State ────────────────────────────────────────────────────────
-  const [genName, setGenName] = useState('');
   const [genPrompt, setGenPrompt] = useState('');
+  const [genKeywords, setGenKeywords] = useState([]);
+  const [genKeywordInput, setGenKeywordInput] = useState('');
+  const [genKeywordError, setGenKeywordError] = useState('');
   const [genPrefixes, setGenPrefixes] = useState('');
   const [genSuffixes, setGenSuffixes] = useState('');
   const [generating, setGenerating] = useState(false);
   const [generationResult, setGenerationResult] = useState(null); // { original, suggestions }
   const [genError, setGenError] = useState(null);
-  const [selectedDomains, setSelectedDomains] = useState(new Set());
+   const [selectedDomains, setSelectedDomains] = useState(new Set());
+   const [lastVerifiedDomains, setLastVerifiedDomains] = useState(new Set());
+ 
+   const hasSelectionChanged = React.useMemo(() => {
+     if (selectedDomains.size !== lastVerifiedDomains.size) return true;
+     for (const d of selectedDomains) {
+       if (!lastVerifiedDomains.has(d)) return true;
+     }
+     return false;
+   }, [selectedDomains, lastVerifiedDomains]);
 
   const handleGenerate = async (e) => {
     e.preventDefault();
-    if (!genName.trim()) return;
+    if (!genPrompt.trim()) return;
 
     setGenerating(true);
     setGenError(null);
     setGenerationResult(null);
-    setSelectedDomains(new Set());
-    setBulkResults({});
+     setLastVerifiedDomains(new Set());
+      setBulkResults({});
     setVerifyProgress(null);
 
     try {
@@ -220,8 +231,8 @@ function App() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name: genName.trim(),
           prompt: genPrompt.trim(),
+          keywords: genKeywords,
           prefixes: genPrefixes.split(',').map((p) => p.trim()).filter(Boolean),
           suffixes: genSuffixes.split(',').map((s) => s.trim()).filter(Boolean),
           tlds: Array.from(selectedTLDs),
@@ -231,14 +242,11 @@ function App() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to generate names');
 
-      // data = { original: { base, domains[] }, suggestions: [{ base, domains[] }] }
+      // data = { suggestions: [{ base, domains[] }] }
       setGenerationResult(data);
 
       // Pre-select all domains
-      const allDomains = [
-        ...data.original.domains,
-        ...data.suggestions.flatMap((s) => s.domains),
-      ];
+      const allDomains = data.suggestions.flatMap((s) => s.domains);
       setSelectedDomains(new Set(allDomains));
     } catch (err) {
       setGenError(err.message);
@@ -272,6 +280,38 @@ function App() {
     setCustomTLD('');
   };
 
+  const handleAddGenKeyword = (e) => {
+    e.preventDefault?.();
+
+    const raw = genKeywordInput.trim();
+    if (!raw) return;
+
+    if (/\s/.test(raw)) {
+      setGenKeywordError('Each weighted word must be a single token (no spaces).');
+      return;
+    }
+
+    if (genKeywords.length >= 5) {
+      setGenKeywordError('You can add up to 5 weighted words.');
+      return;
+    }
+
+    const normalized = raw.toLowerCase();
+    if (genKeywords.includes(normalized)) {
+      setGenKeywordError('This weighted word is already added.');
+      return;
+    }
+
+    setGenKeywords((prev) => [...prev, normalized]);
+    setGenKeywordInput('');
+    setGenKeywordError('');
+  };
+
+  const handleRemoveGenKeyword = (keyword) => {
+    setGenKeywords((prev) => prev.filter((k) => k !== keyword));
+    setGenKeywordError('');
+  };
+
   const toggleDomainSelection = (domain) => {
     setSelectedDomains((prev) => {
       const next = new Set(prev);
@@ -283,6 +323,7 @@ function App() {
 
   const handleBulkVerify = async () => {
     if (selectedDomains.size === 0) return;
+   setLastVerifiedDomains(new Set(selectedDomains));
 
     const allSelected = Array.from(selectedDomains);
     const resultsToUpdate = { ...bulkResults };
@@ -403,8 +444,14 @@ function App() {
 
           <div style={{ display: activeTab === 'generate' ? 'contents' : 'none' }}>
             <GeneratorTab
-              genName={genName} setGenName={setGenName}
               genPrompt={genPrompt} setGenPrompt={setGenPrompt}
+              genKeywords={genKeywords}
+              genKeywordInput={genKeywordInput}
+              setGenKeywordInput={setGenKeywordInput}
+              genKeywordError={genKeywordError}
+              setGenKeywordError={setGenKeywordError}
+              handleAddGenKeyword={handleAddGenKeyword}
+              handleRemoveGenKeyword={handleRemoveGenKeyword}
               genPrefixes={genPrefixes} setGenPrefixes={setGenPrefixes}
               genSuffixes={genSuffixes} setGenSuffixes={setGenSuffixes}
               generating={generating}
@@ -414,8 +461,9 @@ function App() {
               customTLD={customTLD} setCustomTLD={setCustomTLD}
               customTLDError={customTLDError}
               handleAddCustomTLD={handleAddCustomTLD}
-              selectedDomains={selectedDomains} toggleDomainSelection={toggleDomainSelection}
-              bulkVerifying={bulkVerifying}
+               selectedDomains={selectedDomains} toggleDomainSelection={toggleDomainSelection}
+               hasSelectionChanged={hasSelectionChanged}
+               bulkVerifying={bulkVerifying}
               bulkResults={bulkResults}
               handleBulkVerify={handleBulkVerify}
               verifyProgress={verifyProgress}
