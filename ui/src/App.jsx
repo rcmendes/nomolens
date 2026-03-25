@@ -709,7 +709,7 @@ function AppInner() {
         <div className="app-container">
           <header>
             <h1>Nomo Lens</h1>
-            <p>Discover the unseen details of your next great idea. <em>(Nomo means "name" in Esperanto)</em></p>
+            <p>Your ideas deserve the perfect name. Let's find it together.</p>
           </header>
 
           <div
