@@ -1,6 +1,15 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { BellIcon, StarIcon } from './icons';
+import { RefreshIcon, BellIcon, StarIcon } from './icons';
 import { useToast } from './useToast';
+
+function fmtDate(iso) {
+  if (!iso) return null;
+  try {
+    return new Date(iso).toLocaleDateString('en-US', {
+      month: 'short', day: 'numeric', year: 'numeric',
+    });
+  } catch { return null; }
+}
 
 function statusLabel(status) {
   switch (status) {
@@ -51,6 +60,7 @@ export default function MonitoredPanel({
   onUpdateMonitored,
   recheckingDomain,
   addFavorite,
+  removeFavorite,
   isFavorite,
 }) {
   const isEmpty = monitored.length === 0;
@@ -232,11 +242,22 @@ export default function MonitoredPanel({
           {filteredAndSortedMonitored.map((row) => (
             <li key={row.domain} className="favorites-item favorites-item--rich">
               <div className="favorites-item-main">
-                <div className="favorites-item-info">
-                  <span className="favorites-item-domain" title={row.domain}>
+                <div className="fav-card-header">
+                  <h4 className="fav-card-domain" title={row.domain}>
                     {row.domain}
-                  </span>
-                  <div className="favorites-item-meta">
+                  </h4>
+                  <button
+                    className="favorites-remove-btn fav-card-remove-btn"
+                    onClick={() => onRemove(row.domain)}
+                    aria-label={`Remove ${row.domain} from monitor list`}
+                    title="Remove from monitor list"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                <div className="fav-card-meta">
+                  <div className="fav-card-info-row">
                     {row.status && (
                       <span className={`favorites-item-badge fav-status-${row.status}`}>
                         {statusLabel(row.status)}
@@ -249,43 +270,66 @@ export default function MonitoredPanel({
                       </span>
                     )}
                   </div>
-                  {row.checkedAt && (
-                    <span className="favorites-checked-at">
-                      Checked {new Date(row.checkedAt).toLocaleDateString()}
-                    </span>
-                  )}
+
+                  {(() => {
+                    const hasExpiry = row.status !== 'available' && row.expirationDate && row.expirationDate !== 'Unknown';
+                    const hasChecked = !!row.checkedAt;
+                    if (!hasExpiry && !hasChecked) return null;
+                    return (
+                      <p className="fav-card-dates">
+                        {hasExpiry && <span>Expires {fmtDate(row.expirationDate)}</span>}
+                        {hasExpiry && hasChecked && <span className="fav-card-dates-sep" aria-hidden>·</span>}
+                        {hasChecked && <span>Checked {fmtDate(row.checkedAt)}</span>}
+                      </p>
+                    );
+                  })()}
                 </div>
-                <div className="favorites-item-actions">
+
+                <div className="fav-card-actions" role="group" aria-label={`Actions for ${row.domain}`}>
                   <button
                     type="button"
-                    className={`favorites-cross-btn ${isFavorite?.(row.domain) ? 'active' : ''}`}
-                    onClick={() => addFavorite?.(row.domain, row)}
-                    disabled={!addFavorite || !isFavorite || isFavorite(row.domain)}
-                    aria-label={
-                      isFavorite?.(row.domain)
-                        ? `${row.domain} is already in your favorites`
-                        : `Add ${row.domain} to favorites`
-                    }
-                    title={isFavorite?.(row.domain) ? 'Already in favorites' : 'Add to favorites'}
-                  >
-                    <StarIcon filled={isFavorite?.(row.domain)} size={18} />
-                  </button>
-                  <button
-                    type="button"
-                    className="favorites-recheck-btn"
-                    onClick={() => onRecheck?.(row.domain)}
-                    disabled={recheckingDomain === row.domain}
-                    aria-label={`Re-check ${row.domain}`}
-                  >
-                    {recheckingDomain === row.domain ? '…' : 'Re-check'}
-                  </button>
-                  <button
-                    className="favorites-remove-btn"
+                    className="fav-card-action-btn active"
                     onClick={() => onRemove(row.domain)}
                     aria-label={`Remove ${row.domain} from monitor list`}
                     title="Remove from monitor list"
                   >
-                    ✕
+                    <BellIcon off={false} size={18} />
+                    <span className="fav-card-action-label">Monitored</span>
+                  </button>
+                  {(() => {
+                    const faved = isFavorite?.(row.domain);
+                    return (
+                      <button
+                        type="button"
+                        className={`fav-card-action-btn ${faved ? 'active' : ''}`}
+                        onClick={() => (faved ? removeFavorite?.(row.domain) : addFavorite?.(row.domain, row))}
+                        disabled={false}
+                        aria-label={
+                          faved ? `Remove ${row.domain} from favorites` : `Add ${row.domain} to favorites`
+                        }
+                        title={faved ? 'Remove from favorites' : 'Add to favorites'}
+                      >
+                        <StarIcon filled={!!faved} size={18} />
+                        <span className="fav-card-action-label">{faved ? 'Favorited' : 'Favorite'}</span>
+                      </button>
+                    );
+                  })()}
+                  <button
+                    type="button"
+                    className="fav-card-action-btn"
+                    onClick={() => onRecheck?.(row.domain)}
+                    disabled={recheckingDomain === row.domain}
+                    aria-label={`Refresh check for ${row.domain}`}
+                    title="Refresh this check"
+                  >
+                    {recheckingDomain === row.domain ? (
+                      <span className="fav-card-action-label">Refreshing…</span>
+                    ) : (
+                      <>
+                        <RefreshIcon size={16} />
+                        <span className="fav-card-action-label">Refresh</span>
+                      </>
+                    )}
                   </button>
                 </div>
               </div>

@@ -4,6 +4,7 @@ import MonitoredPanel from './MonitoredPanel';
 export default function MonitorTab({
   monitored,
   removeMonitored,
+  removeFavorite,
   updateMonitoredField,
   onRecheckMonitored,
   recheckingMonitoredDomain,
@@ -27,6 +28,7 @@ export default function MonitorTab({
         onUpdateMonitored={updateMonitoredField}
         recheckingDomain={recheckingMonitoredDomain}
         addFavorite={addFavorite}
+        removeFavorite={removeFavorite}
         isFavorite={isFavorite}
       />
     </section>

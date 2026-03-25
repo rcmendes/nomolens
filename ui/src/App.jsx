@@ -849,6 +849,7 @@ function AppInner() {
             <MonitorTab
               monitored={monitored}
               removeMonitored={removeMonitored}
+              removeFavorite={removeFavorite}
               updateMonitoredField={updateMonitoredField}
               onRecheckMonitored={refreshMonitored}
               recheckingMonitoredDomain={recheckingMonitoredDomain}
@@ -865,6 +866,7 @@ function AppInner() {
           onUpdateFavorite={updateFavoriteField}
           recheckingDomain={recheckingDomain}
           addMonitored={addMonitored}
+          removeMonitored={removeMonitored}
           isMonitored={isMonitored}
         />
       </div>

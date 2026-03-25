@@ -151,7 +151,7 @@ function VerificationCard({
             </button>
           )}
 
-          {!result.loading && !result.error && (status === 'available' || faved) && (
+          {!result.loading && !result.error && (
             <button
               className={`fav-star-btn ${faved ? 'faved' : ''}`}
               onClick={handleFavToggle}
