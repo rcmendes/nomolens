@@ -17,7 +17,8 @@ Get instant, comprehensive data on any domain:
 
 ### 🤖 AI-Powered Name Generation
 Stuck on a name? Let Gemini do the heavy lifting:
-- **Contextual Brainstorming**: Provide a product description, and the AI generates relevant, creative base names.
+- **Contextual Brainstorming**: Provide a required product prompt, and Gemini generates 10 relevant, creative base names.
+- **Weighted Concept Words**: Optionally add up to 5 high-priority keywords that steer name generation toward your core product concept.
 - **Smart Modifiers**: Add custom prefixes and suffixes (e.g., "get", "app", "hq") to your ideas.
 - **Multi-TLD Expansion**: Automatically apply your favorite TLDs to every AI suggestion.
 - **Interactive Tree View**: Explore suggestions in a hierarchical structure and bulk-verify availability with one click.
@@ -94,7 +95,7 @@ npm run prod
 | Endpoint | Method | Description |
 | :--- | :--- | :--- |
 | `/api/check` | `GET` | Verifies availability, price, and WHOIS info for a single domain. |
-| `/api/generate` | `POST` | Uses Gemini to suggest names based on base name, prompt, and TLDs. |
+| `/api/generate` | `POST` | Uses Gemini to suggest names from required product prompt, optional weighted keywords, and selected TLDs. |
 
 ---
 

@@ -1,48 +1,101 @@
 const { GoogleGenAI } = require('@google/genai');
 const { isDev } = require('./config');
 
+const TARGET_SUGGESTIONS = 10;
+
+function sanitizeBase(value) {
+  return String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/\.[a-z]{2,}(\.[a-z]{2,})*$/, '')
+    .replace(/[^a-z0-9-]/g, '');
+}
+
+function extractPromptTokens(prompt) {
+  const matches = String(prompt || '').toLowerCase().match(/[a-z0-9]+/g) || [];
+  return [...new Set(matches)].filter((token) => token.length >= 3).slice(0, 12);
+}
+
+function buildFallbackNames({ prompt, keywords, prefixes, suffixes, excludeBaseNames }) {
+  const defaultPrefixes = ['get', 'try', 'use', 'join', 'go'];
+  const defaultSuffixes = ['labs', 'flow', 'forge', 'spark', 'works', 'hub', 'ly', 'ify', 'base', 'grid'];
+
+  const safePrefixes = [...new Set([...(prefixes || []), ...defaultPrefixes].map(sanitizeBase).filter(Boolean))];
+  const safeSuffixes = [...new Set([...(suffixes || []), ...defaultSuffixes].map(sanitizeBase).filter(Boolean))];
+  const seedWords = [...new Set([
+    ...(keywords || []).map(sanitizeBase),
+    ...extractPromptTokens(prompt).map(sanitizeBase),
+    'nova',
+  ])].filter(Boolean);
+
+  const list = [];
+  for (const seed of seedWords) {
+    if (!excludeBaseNames.has(seed) && !list.includes(seed)) {
+      list.push(seed);
+    }
+
+    for (const pre of safePrefixes) {
+      const candidate = `${pre}${seed}`;
+      if (!excludeBaseNames.has(candidate) && !list.includes(candidate)) list.push(candidate);
+      if (list.length >= TARGET_SUGGESTIONS) return list.slice(0, TARGET_SUGGESTIONS);
+    }
+
+    for (const suf of safeSuffixes) {
+      const candidate = `${seed}${suf}`;
+      if (!excludeBaseNames.has(candidate) && !list.includes(candidate)) list.push(candidate);
+      if (list.length >= TARGET_SUGGESTIONS) return list.slice(0, TARGET_SUGGESTIONS);
+    }
+  }
+
+  return list.slice(0, TARGET_SUGGESTIONS);
+}
+
 /**
- * Asks Gemini to generate 10 creative base names (no TLDs) derived from the
- * user's input using synonyms, prefix/suffix ideas, and wordplay.
+ * Asks Gemini to generate creative base names (no TLDs) derived from product
+ * context, weighted keywords, and optional prefix/suffix ideas.
  *
- * @param {{ name: string, prompt?: string, prefixes?: string[], suffixes?: string[], exclude?: string[] }} opts
- * @returns {Promise<string[]>} Array of up to 10 clean base name strings (no dots, no TLDs).
+ * @param {{ prompt: string, keywords?: string[], prefixes?: string[], suffixes?: string[], exclude?: string[] }} opts
+ * @returns {Promise<string[]>} Array of exactly 10 clean base names (best effort with fallbacks).
  */
-async function generateBaseNames({ name, prefixes = [], suffixes = [], prompt = '', exclude = [] }) {
+async function generateBaseNames({ prompt, keywords = [], prefixes = [], suffixes = [], exclude = [] }) {
   const apiKey = process.env.GEMINI_API_KEY;
-  const cleanName = name.toLowerCase().replace(/\s+/g, '');
+  const cleanPrompt = String(prompt || '').trim();
+  const cleanKeywords = [...new Set(
+    (keywords || [])
+      .map((k) => String(k).trim().toLowerCase())
+      .filter((k) => k && !/\s/.test(k))
+  )].slice(0, 5);
+  const excludedBaseNames = new Set(
+    (exclude || []).map((d) => sanitizeBase(String(d).split('.')[0])).filter(Boolean)
+  );
 
   if (!apiKey) {
     console.warn('[WARN] GEMINI_API_KEY is not set. Returning mock base names.');
-    return [
-      `get${cleanName}`,
-      `${cleanName}app`,
-      `${cleanName}hq`,
-      `try${cleanName}`,
-      `my${cleanName}`,
-      `${cleanName}hub`,
-      `${cleanName}ly`,
-      `${cleanName}ify`,
-      `${cleanName}pro`,
-      `the${cleanName}`,
-    ];
+    return buildFallbackNames({
+      prompt: cleanPrompt,
+      keywords: cleanKeywords,
+      prefixes,
+      suffixes,
+      excludeBaseNames: excludedBaseNames,
+    });
   }
 
   const ai = new GoogleGenAI({ apiKey });
 
   const systemInstruction =
-    `You are a creative naming assistant. ` +
-    `Your output MUST be a valid JSON array of exactly 9 strings. ` +
-    `Each string is a single-word (or short compound word) base domain name WITHOUT any TLD extension. ` +
-    `No dots, no spaces, no TLD suffixes. Example output: ["acme","getacme","acmehq","tryacme","acmeapp","acmely","acmeify","acmepro","theacme"]. ` +
+    `You are a domain naming strategist for startup products. ` +
+    `Your output MUST be a valid JSON array of exactly ${TARGET_SUGGESTIONS} strings. ` +
+    `Each string must be a concise base domain candidate WITHOUT TLD extensions. ` +
+    `No spaces, no dots, and no punctuation except optional hyphen. ` +
+    `Names must be brandable, memorable, and aligned to the product context. ` +
     `Do NOT include markdown code fences or any other text outside the JSON array.`;
 
-  let userMessage = `Generate exactly 9 unique, creative, and memorable base domain name ideas for the following input.\n`;
-  userMessage += `Base name: ${name}\n`;
+  let userMessage = `Generate exactly ${TARGET_SUGGESTIONS} unique base domain name ideas.\n`;
+  userMessage += `Product context (required): ${cleanPrompt}\n`;
+  userMessage += `Weighted concept words (higher priority signal): ${
+    cleanKeywords.length > 0 ? cleanKeywords.join(', ') : 'none provided'
+  }\n`;
 
-  if (prompt) {
-    userMessage += `Product context: ${prompt}\n`;
-  }
   if (prefixes && prefixes.length > 0) {
     userMessage += `Consider using these prefixes: ${prefixes.join(', ')}\n`;
   }
@@ -50,20 +103,21 @@ async function generateBaseNames({ name, prefixes = [], suffixes = [], prompt = 
     userMessage += `Consider using these suffixes: ${suffixes.join(', ')}\n`;
   }
   if (exclude && exclude.length > 0) {
-    userMessage += `\nCRITICAL: Do NOT suggest any names that are contained in this blocklist of already taken/cached domains: ${exclude.slice(0, 50).join(', ')}\n`;
+    userMessage += `\nCRITICAL: Do NOT suggest names in this blocklist of already cached/taken domains: ${exclude.slice(0, 60).join(', ')}\n`;
   }
 
   userMessage +=
     `\nRules:\n` +
-    `- Use synonyms, wordplay, portmanteaus, or creative variations of the base name.\n` +
-    `- Mix in some of the provided prefixes and suffixes where they fit naturally.\n` +
-    `- All names must be lowercase alphanumeric only (hyphens allowed, no spaces).\n` +
-    `- Do NOT include the original base name verbatim as one of the 9 suggestions.\n` +
-    `- Return ONLY a JSON array of 9 strings.`;
+    `- Treat weighted concept words as stronger semantic anchors than other terms.\n` +
+    `- Keep suggestions tightly aligned with the product context and likely buyer intent.\n` +
+    `- Mix in provided prefixes/suffixes only when natural and brandable.\n` +
+    `- Avoid generic low-signal names and avoid near-duplicates.\n` +
+    `- All names must be lowercase alphanumeric (hyphen allowed), with no spaces.\n` +
+    `- Return ONLY a JSON array of ${TARGET_SUGGESTIONS} strings.`;
 
   try {
     if (isDev) {
-      console.info(`[DEV] API Call (Gemini): generateBaseNames (name: ${name})`);
+      console.info('[DEV] API Call (Gemini): generateBaseNames');
     }
 
     const response = await ai.models.generateContent({
@@ -71,7 +125,7 @@ async function generateBaseNames({ name, prefixes = [], suffixes = [], prompt = 
       contents: userMessage,
       config: {
         systemInstruction,
-        temperature: 0.85,
+        temperature: 0.8,
       },
     });
 
@@ -80,34 +134,34 @@ async function generateBaseNames({ name, prefixes = [], suffixes = [], prompt = 
 
     if (isDev) console.info(`[DEV] Gemini raw response: ${text}`);
 
-    // Strip any accidental markdown fences
     text = text.replace(/```json/g, '').replace(/```/g, '').trim();
-
     let parsed = JSON.parse(text);
 
     if (!Array.isArray(parsed)) throw new Error('Gemini returned non-array JSON');
 
-    // Extract base names from exclude list for better filtering
-    const excludedBaseNames = exclude.map(d => d.split('.')[0].toLowerCase());
-
-    // Sanitise: keep only non-empty strings, strip any accidental TLD suffixes
     parsed = parsed
       .filter((d) => typeof d === 'string' && d.trim().length > 0)
-      .map((d) => d.trim().toLowerCase().replace(/\.[a-z]{2,}(\.[a-z]{2,})*$/, ''))
-      .filter((d) => d.length > 0 && d !== cleanName && !excludedBaseNames.includes(d));
+      .map((d) => sanitizeBase(d))
+      .filter((d) => d.length > 0)
+      .filter((d) => /^[a-z0-9-]+$/.test(d))
+      .filter((d) => !excludedBaseNames.has(d))
+      .filter((d) => !cleanKeywords.includes(d));
 
-    // Deduplicate and cap at 9
-    parsed = [...new Set(parsed)].slice(0, 9);
+    parsed = [...new Set(parsed)].slice(0, TARGET_SUGGESTIONS);
 
-    // Pad with fallbacks if Gemini returned fewer than 9
-    const fallbacks = [`get${cleanName}`, `${cleanName}app`, `${cleanName}hq`, `try${cleanName}`, `my${cleanName}`,
-    `${cleanName}hub`, `${cleanName}ly`, `${cleanName}ify`, `${cleanName}pro`, `the${cleanName}`];
+    const fallbacks = buildFallbackNames({
+      prompt: cleanPrompt,
+      keywords: cleanKeywords,
+      prefixes,
+      suffixes,
+      excludeBaseNames: excludedBaseNames,
+    });
     for (const fb of fallbacks) {
-      if (parsed.length >= 9) break;
-      if (!parsed.includes(fb) && fb !== cleanName) parsed.push(fb);
+      if (parsed.length >= TARGET_SUGGESTIONS) break;
+      if (!parsed.includes(fb) && !cleanKeywords.includes(fb)) parsed.push(fb);
     }
 
-    return parsed.slice(0, 9);
+    return parsed.slice(0, TARGET_SUGGESTIONS);
   } catch (error) {
     if (isDev) console.error(`[DEV] Gemini error: ${error.message}`);
     console.error('Error generating base names with Gemini:', error);

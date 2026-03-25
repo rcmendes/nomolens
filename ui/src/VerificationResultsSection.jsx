@@ -128,23 +128,19 @@ function VerificationCard({ domain, result, isFavorite, addFavorite, removeFavor
 export default function VerificationResultsSection({ bulkResults, isFavorite, addFavorite, removeFavorite }) {
   const entries = Object.entries(bulkResults);
   const [filterStatuses, setFilterStatuses] = useState(new Set(['available', 'expiring-soon', 'taken', 'unavailable']));
-  const [filterDomains, setFilterDomains] = useState(new Set());
+  /** Domains the user has unchecked in the multiselect; all others in current results count as selected. */
+  const [deselectedDomains, setDeselectedDomains] = useState(() => new Set());
   const [sortKey, setSortKey] = useState('name'); // 'name', 'price', 'tld'
   const [sortDir, setSortDir] = useState('asc');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
 
-  // Initialize domain filters when results change
   const allDomainNames = useMemo(() => Object.keys(bulkResults).sort(), [bulkResults]);
-  
-  useEffect(() => {
-    // If we have new domains, add them to the filter set by default
-    setFilterDomains(prev => {
-      const next = new Set(prev);
-      allDomainNames.forEach(d => next.add(d));
-      return next;
-    });
-  }, [allDomainNames]);
+
+  const selectedDomainCount = useMemo(
+    () => allDomainNames.filter((d) => !deselectedDomains.has(d)).length,
+    [allDomainNames, deselectedDomains]
+  );
 
   // Handle clicking outside dropdown
   useEffect(() => {
@@ -167,7 +163,7 @@ export default function VerificationResultsSection({ bulkResults, isFavorite, ad
   };
 
   const toggleDomainFilter = (domain) => {
-    setFilterDomains(prev => {
+    setDeselectedDomains((prev) => {
       const next = new Set(prev);
       if (next.has(domain)) next.delete(domain);
       else next.add(domain);
@@ -190,8 +186,8 @@ export default function VerificationResultsSection({ bulkResults, isFavorite, ad
         const status = getEntryStatus(result);
         // Status filtering (ignore loading/error for status filter)
         if (status !== 'loading' && status !== 'error' && !filterStatuses.has(status)) return false;
-        // Domain name filtering
-        if (filterDomains.size > 0 && !filterDomains.has(domain)) return false;
+        // Domain name filtering (unchecked = hidden)
+        if (deselectedDomains.has(domain)) return false;
         return true;
       })
       .sort(([domA, resA], [domB, resB]) => {
@@ -212,7 +208,7 @@ export default function VerificationResultsSection({ bulkResults, isFavorite, ad
         if (valA > valB) return sortDir === 'asc' ? 1 : -1;
         return 0;
       });
-  }, [entries, filterStatuses, filterDomains, sortKey, sortDir]);
+  }, [entries, filterStatuses, deselectedDomains, sortKey, sortDir]);
 
   if (entries.length === 0) return null;
 
@@ -263,9 +259,9 @@ export default function VerificationResultsSection({ bulkResults, isFavorite, ad
               className="multiselect-trigger" 
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
             >
-              {filterDomains.size === allDomainNames.length 
-                ? 'All Domains Selected' 
-                : `${filterDomains.size} selected`}
+              {selectedDomainCount === allDomainNames.length
+                ? 'All Domains Selected'
+                : `${selectedDomainCount} selected`}
               <span>▼</span>
             </button>
             {isDropdownOpen && (
@@ -274,7 +270,7 @@ export default function VerificationResultsSection({ bulkResults, isFavorite, ad
                   <label key={domain} className="multiselect-item">
                     <input 
                       type="checkbox" 
-                      checked={filterDomains.has(domain)}
+                      checked={!deselectedDomains.has(domain)}
                       onChange={() => toggleDomainFilter(domain)}
                     />
                     <span>{domain}</span>

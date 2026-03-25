@@ -108,7 +108,7 @@ export default function GeneratorTab({
    hasSelectionChanged,
    verifyProgress,
   onGenerate,
-  favorites, addFavorite, removeFavorite, isFavorite,
+  addFavorite, removeFavorite, isFavorite,
 }) {
   const hasResult = generationResult !== null;
 

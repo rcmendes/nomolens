@@ -83,7 +83,7 @@ function App() {
         return null;
       }
       return entry.data;
-    } catch (e) {
+    } catch {
       return null;
     }
   }, []);
@@ -198,7 +198,7 @@ function App() {
   const [genPrefixes, setGenPrefixes] = useState('');
   const [genSuffixes, setGenSuffixes] = useState('');
   const [generating, setGenerating] = useState(false);
-  const [generationResult, setGenerationResult] = useState(null); // { original, suggestions }
+  const [generationResult, setGenerationResult] = useState(null); // { suggestions }
   const [genError, setGenError] = useState(null);
    const [selectedDomains, setSelectedDomains] = useState(new Set());
    const [lastVerifiedDomains, setLastVerifiedDomains] = useState(new Set());
@@ -435,7 +435,6 @@ function App() {
               setCustomTLD={setCustomTLD}
               customTLDError={customTLDError}
               handleAddCustomTLD={handleAddCustomTLD}
-              favorites={favorites}
               addFavorite={addFavorite}
               removeFavorite={removeFavorite}
               isFavorite={isFavorite}
@@ -468,7 +467,6 @@ function App() {
               handleBulkVerify={handleBulkVerify}
               verifyProgress={verifyProgress}
               onGenerate={handleGenerate}
-              favorites={favorites}
               addFavorite={addFavorite}
               removeFavorite={removeFavorite}
               isFavorite={isFavorite}

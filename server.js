@@ -188,6 +188,9 @@ app.post('/api/generate', apiLimiter, async (req, res) => {
       .filter((k) => typeof k === 'string')
       .map((k) => k.trim().toLowerCase())
       .filter(Boolean);
+    if ((keywords || []).length !== normalizedKeywords.length) {
+      return res.status(400).json({ error: 'All keywords must be strings' });
+    }
 
     if (normalizedKeywords.length > 5) {
       return res.status(400).json({ error: 'keywords supports up to 5 words' });

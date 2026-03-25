@@ -13,7 +13,7 @@ export default function DirectSearchTab({
   customTLD, setCustomTLD,
   customTLDError,
   handleAddCustomTLD,
-  favorites, addFavorite, removeFavorite, isFavorite,
+  addFavorite, removeFavorite, isFavorite,
 }) {
   return (
     <section className="mode-section glass" style={{ animation: 'none', opacity: 1 }}>
