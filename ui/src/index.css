@@ -15,6 +15,9 @@
   --text-main: #f8fafc;
   --text-muted: #94a3b8;
   --input-bg: rgba(15, 23, 42, 0.6);
+  /* Hint / info callouts: distinct from inputs (tinted surface) */
+  --field-info-bg: rgba(67, 56, 202, 0.22);
+  --field-info-border: rgba(165, 180, 252, 0.32);
   --card-bg: rgba(255, 255, 255, 0.05);
   --card-hover: rgba(255, 255, 255, 0.08);
   --box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
@@ -28,6 +31,8 @@
   --text-main: #0f172a;
   --text-muted: #64748b;
   --input-bg: rgba(255, 255, 255, 0.8);
+  --field-info-bg: #eef2ff;
+  --field-info-border: rgba(79, 70, 229, 0.2);
   --card-bg: rgba(255, 255, 255, 0.7);
   --card-hover: rgba(255, 255, 255, 0.9);
   --box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.1);
@@ -494,6 +499,146 @@ header p {
 
 .required {
   color: #f87171;
+}
+
+/* Field info toggle (Generate tab, etc.) */
+.field-label-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.field-label-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.5rem;
+}
+
+.field-label-row > label,
+.field-label-row > .field-section-label {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+}
+
+.field-section-label {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.field-info-btn {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  padding: 0;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: color 0.2s, background 0.2s;
+}
+
+.field-info-btn:hover {
+  color: var(--primary);
+  background: rgba(79, 70, 229, 0.08);
+}
+
+.field-info-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.35);
+  color: var(--primary);
+}
+
+.field-info-panel {
+  margin: 0;
+  padding: 0.65rem 0.85rem;
+  font-size: 0.82rem;
+  font-weight: 400;
+  line-height: 1.45;
+  color: var(--text-muted);
+  background: var(--field-info-bg);
+  border: 1px solid var(--field-info-border);
+  border-radius: 10px;
+  max-width: 42rem;
+}
+
+.field-info-panel[hidden] {
+  display: none !important;
+}
+
+.field-info-panel p {
+  margin: 0 0 0.5rem;
+}
+
+.field-info-panel p:last-child {
+  margin-bottom: 0;
+}
+
+.field-info-panel code {
+  font-size: 0.9em;
+  padding: 0.1em 0.35em;
+  border-radius: 4px;
+  background: rgba(79, 70, 229, 0.14);
+  color: var(--text-main);
+}
+
+.prompt-char-count {
+  margin-top: 0.35rem;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+}
+
+.prompt-char-count--max {
+  color: #f59e0b;
+}
+
+[data-theme="light"] .prompt-char-count--max {
+  color: #d97706;
+}
+
+.field-info-icon-root {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.35rem;
+}
+
+.field-info-icon-root .field-info-panel {
+  align-self: stretch;
+  max-width: none;
+}
+
+.advanced-panel-intro {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.35rem;
+  margin-bottom: 0.75rem;
+}
+
+.advanced-panel-intro-text {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  line-height: 1.45;
+  margin: 0;
+}
+
+.advanced-panel-intro .field-info-icon-root {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  width: 100%;
+}
+
+.advanced-panel-intro .field-info-icon-root .field-info-panel {
+  width: 100%;
+  align-self: stretch;
 }
 
 .form-group input,
