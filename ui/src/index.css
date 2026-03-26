@@ -1454,6 +1454,90 @@ textarea#gen-prompt {
   text-transform: uppercase;
 }
 
+/* --- Terminal Tree Layout --- */
+.tree-root-section {
+  margin-top: 0.5rem;
+}
+
+.tree-root-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.6rem;
+}
+
+.tree-root-icon {
+  color: var(--primary);
+  font-size: 1rem;
+  font-family: monospace;
+  opacity: 0.9;
+}
+
+.tree-root-label {
+  color: var(--primary);
+  font-family: var(--font-mono, monospace);
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  min-width: 28ch;
+}
+
+.tree-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.tree-node-header {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-bottom: 0.15rem;
+}
+
+.tree-connector {
+  color: var(--text-muted);
+  opacity: 0.38;
+  user-select: none;
+  white-space: pre;
+  font-family: monospace;
+  font-size: 0.8rem;
+  flex-shrink: 0;
+}
+
+.tree-node-label {
+  font-family: var(--font-main, inherit);
+  font-weight: 600;
+  font-size: 0.9rem;
+  background: transparent;
+  border: none;
+  color: var(--text-main);
+  cursor: pointer;
+  padding: 0.15rem 0.35rem;
+  border-radius: 4px;
+  transition: color 0.15s;
+}
+
+.tree-node-label:hover {
+  color: var(--primary);
+}
+
+.tree-node-label--all {
+  color: var(--primary);
+}
+
+.tree-node-label:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.tree-tld-row {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.06rem 0;
+}
+
 
 /* --- Results Toolbar (Filter & Sort) --- */
 .results-toolbar {

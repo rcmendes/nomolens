@@ -1,4 +1,4 @@
-import React, { useState, forwardRef } from 'react';
+import React, { useState, useEffect, forwardRef } from 'react';
 import VerificationResultsSection from './VerificationResultsSection';
 import { FieldInfo, FieldInfoIcon } from './FieldInfo';
 import { MicIcon } from './icons';
@@ -6,6 +6,19 @@ import { MicIcon } from './icons';
 const MAX_WEIGHTED_WORDS = 5;
 /** Matches server.js /api/generate prompt length check */
 const MAX_PROMPT_CHARS = 1000;
+
+const VERIFY_PHRASES = [
+  'Sniffing the namespace...',
+  'Consulting the domain gods...',
+  'Baking possibilities in the DNS oven...',
+  'Shaking the domain tree...',
+  'Poking WHOIS with a stick...',
+  'Rummaging through digital real estate...',
+  'Asking the registry nicely...',
+  'Spelunking the TLD caves...',
+  'Summoning the registrar spirits...',
+  'Checking if someone beat us to it...',
+];
 
 function SeedRootIcon() {
   return (
@@ -26,8 +39,9 @@ function SeedRootIcon() {
   );
 }
 
-function TldPill({ domain, selected, onToggle, disabled, bulkResults }) {
+function TldPill({ domain, selected, onToggle, disabled, bulkResults, tldOnly }) {
   const result = bulkResults[domain];
+  const displayText = tldOnly ? domain.slice(domain.indexOf('.')) : domain;
 
   let statusLabel = null;
   let modifier = '';
@@ -65,38 +79,74 @@ function TldPill({ domain, selected, onToggle, disabled, bulkResults }) {
       aria-pressed={selected}
       aria-label={`${selected ? 'Deselect' : 'Select'} ${domain}${statusLabel ? ` — ${statusLabel}` : ''}`}
     >
-      <span className="tld-pill-domain">{domain}</span>
+      <span className="tld-pill-domain">{displayText}</span>
       {statusLabel && <span className="tld-pill-status">{statusLabel}</span>}
     </button>
   );
 }
 
-function DomainRow({ base, domains, selectedDomains, onToggle, bulkVerifying, bulkResults, onToggleGroup }) {
-  const allSelected = domains.every((d) => selectedDomains.has(d));
+function TreeRoot({ bulkVerifying }) {
+  const [phrase, setPhrase] = useState(null);
+
+  useEffect(() => {
+    if (!bulkVerifying) {
+      setPhrase(null);
+      return;
+    }
+    let idx = 0;
+    setPhrase(VERIFY_PHRASES[idx]);
+    const id = setInterval(() => {
+      idx = (idx + 1) % VERIFY_PHRASES.length;
+      setPhrase(VERIFY_PHRASES[idx]);
+    }, 2500);
+    return () => clearInterval(id);
+  }, [bulkVerifying]);
 
   return (
-    <div className="domain-row">
-      <button
-        type="button"
-        className={`domain-row-label ${allSelected ? 'domain-row-label--all' : ''}`}
-        onClick={() => onToggleGroup(domains, !allSelected)}
-        disabled={bulkVerifying}
-        aria-label={`${allSelected ? 'Deselect' : 'Select'} all variants for ${base}`}
-        title={`Click to ${allSelected ? 'deselect' : 'select'} all ${base} variants`}
-      >
-        {base}
-      </button>
-      <div className="tld-pills">
-        {domains.map((d) => (
-          <TldPill
-            key={d}
-            domain={d}
-            selected={selectedDomains.has(d)}
-            onToggle={onToggle}
-            disabled={bulkVerifying}
-            bulkResults={bulkResults}
-          />
-        ))}
+    <div className="tree-root-row">
+      <span className="tree-root-icon">◈</span>
+      <span className="tree-root-label">{phrase ?? 'Name seeds'}</span>
+    </div>
+  );
+}
+
+function TreeNode({ base, domains, selectedDomains, onToggle, bulkVerifying, bulkResults, onToggleGroup, isLast }) {
+  const allSelected = domains.every((d) => selectedDomains.has(d));
+  const nodeConnector = isLast ? '└──' : '├──';
+  const tldIndentPrefix = isLast ? '    ' : '│   ';
+
+  return (
+    <div className="tree-node">
+      <div className="tree-node-header">
+        <span className="tree-connector">{nodeConnector}</span>
+        <button
+          type="button"
+          className={`tree-node-label ${allSelected ? 'tree-node-label--all' : ''}`}
+          onClick={() => onToggleGroup(domains, !allSelected)}
+          disabled={bulkVerifying}
+          aria-label={`${allSelected ? 'Deselect' : 'Select'} all variants for ${base}`}
+          title={`Click to ${allSelected ? 'deselect' : 'select'} all ${base} variants`}
+        >
+          ● {base}
+        </button>
+      </div>
+      <div className="tree-node-tlds">
+        {domains.map((d, i) => {
+          const isLastTld = i === domains.length - 1;
+          return (
+            <div key={d} className="tree-tld-row">
+              <span className="tree-connector">{tldIndentPrefix}{isLastTld ? '└──' : '├──'}</span>
+              <TldPill
+                domain={d}
+                selected={selectedDomains.has(d)}
+                onToggle={onToggle}
+                disabled={bulkVerifying}
+                bulkResults={bulkResults}
+                tldOnly
+              />
+            </div>
+          );
+        })}
       </div>
     </div>
   );
@@ -438,35 +488,23 @@ const GeneratorTab = forwardRef(function GeneratorTab(
 
       {hasResult && (
         <div className="generated-results">
-          <h3 style={{ fontSize: '1.2rem', marginBottom: '1.25rem' }}>
-            Name ideas worth a closer look
-            <span
-              style={{
-                fontSize: '0.85rem',
-                color: 'var(--text-muted)',
-                marginLeft: '0.75rem',
-                fontWeight: 400,
-              }}
-            >
-              {generationResult.suggestions.length} groups ·{' '}
-              {generationResult.suggestions.reduce((a, s) => a + s.domains.length, 0)} domains
-            </span>
-          </h3>
-          <p className="results-run-label">Latest generation</p>
-
-          <div className="domain-rows">
-            {generationResult.suggestions.map((suggestion, idx) => (
-              <DomainRow
-                key={`${suggestion.base}-${idx}`}
-                base={suggestion.base}
-                domains={suggestion.domains}
-                selectedDomains={selectedDomains}
-                onToggle={toggleDomainSelection}
-                bulkVerifying={bulkVerifying}
-                bulkResults={bulkResults}
-                onToggleGroup={handleToggleGroup}
-              />
-            ))}
+          <div className="tree-root-section">
+            <TreeRoot bulkVerifying={bulkVerifying} />
+            <div className="tree-body">
+              {generationResult.suggestions.map((suggestion, idx) => (
+                <TreeNode
+                  key={`${suggestion.base}-${idx}`}
+                  base={suggestion.base}
+                  domains={suggestion.domains}
+                  selectedDomains={selectedDomains}
+                  onToggle={toggleDomainSelection}
+                  bulkVerifying={bulkVerifying}
+                  bulkResults={bulkResults}
+                  onToggleGroup={handleToggleGroup}
+                  isLast={idx === generationResult.suggestions.length - 1}
+                />
+              ))}
+            </div>
           </div>
 
           {selectedDomains.size > 0 && (
