@@ -1099,46 +1099,45 @@ textarea#gen-prompt {
 }
 
 .compact-result-card {
-  padding: 1.25rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1.1rem 1.25rem;
   transition: all 0.3s ease;
   border: 1px solid var(--glass-border);
 }
 
-/* Two-column card layout */
-.compact-card-inner {
-  display: flex;
-  align-items: flex-start;
-  gap: 1.25rem;
+.compact-result-card.status-expiring-soon {
+  border-left: 3px solid var(--color-warning);
 }
 
-.compact-card-left {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
-  min-width: 0;
-}
-
-.compact-card-right {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 0.6rem;
-  flex-shrink: 0;
-  min-width: fit-content;
-}
-
-/* Both buttons sit in a row inside the right panel */
+/* Action buttons row */
 .compact-card-btn-row {
   display: flex;
   align-items: center;
   gap: 0.4rem;
 }
 
-/* Inline actions pushed to the far-right of the header row (no-price cards) */
+/* Actions pushed to the far-right of the header row */
 .compact-header-actions {
   margin-left: auto;
   flex-shrink: 0;
+}
+
+/* Meta row: timestamp + inline price */
+.compact-card-meta {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+/* Inline price for available domains */
+.compact-price-inline {
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: var(--success-fg);
+  line-height: 1;
 }
 
 .compact-result-card.status-available {
@@ -1154,14 +1153,6 @@ textarea#gen-prompt {
   border-color: var(--glass-border);
 }
 [data-theme="light"] .compact-result-card.status-taken {
-  background: transparent;
-}
-
-.compact-result-card.status-expiring-soon {
-  background: transparent;
-  border-color: var(--glass-border);
-}
-[data-theme="light"] .compact-result-card.status-expiring-soon {
   background: transparent;
 }
 
@@ -1190,6 +1181,9 @@ textarea#gen-prompt {
   font-weight: 700;
   font-size: 1.25rem;
   color: var(--text-main);
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-all; /* fallback for older Safari */
 }
 
 .compact-badges {
@@ -1214,30 +1208,21 @@ textarea#gen-prompt {
 .compact-badge.error { background: var(--color-warning); color: var(--color-on-warning); }
 .compact-badge.soon { background: var(--color-warning); color: var(--color-on-warning); }
 
-.compact-price-large {
-  font-size: 2.5rem;
-  font-weight: 800;
-  color: var(--success-fg);
-  text-shadow: 0 2px 4px rgba(0,0,0,0.1);
-  white-space: nowrap;
-  text-align: right;
-  line-height: 1.1;
-  min-width: 110px;
-}
-
-[data-theme="dark"] .compact-price-large {
-  color: var(--success-fg);
-}
-
 .compact-info-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1.25rem;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: auto auto;
+  gap: 0.5rem 1rem;
   background: rgba(0, 0, 0, 0.05);
-  padding: 0.75rem 1.25rem;
-  border-radius: 12px;
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
   border: 1px solid var(--glass-border);
   width: 100%;
+}
+
+/* Owner row spans both columns */
+.compact-info-col--owner {
+  grid-column: 1 / -1;
 }
 
 [data-theme="dark"] .compact-info-grid {
@@ -1248,6 +1233,7 @@ textarea#gen-prompt {
   display: flex;
   flex-direction: column;
   gap: 0.15rem;
+  min-width: 0;
 }
 
 .compact-label {
@@ -1261,19 +1247,46 @@ textarea#gen-prompt {
 .compact-value {
   font-size: 0.9rem;
   color: var(--text-main);
-  white-space: nowrap;
   font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Unlocks wrapping for long values like WHOIS owner names */
+.compact-value--wrap {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  overflow: visible;
+  text-overflow: unset;
+}
+
+.compact-expiry-warning {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-warning);
+  background: color-mix(in oklab, var(--color-warning) 12%, transparent);
+  border-left: 3px solid var(--color-warning);
+  padding: 0.4rem 0.75rem;
+  border-radius: 0 6px 6px 0;
 }
 
 .compact-restrictions {
-  margin-top: 0.25rem;
-  font-size: 0.8rem;
-  color: var(--warning-fg);
-  background: var(--warning-bg);
-  padding: 0.5rem 1rem;
-  border-radius: 8px;
-  border-left: 3px solid var(--warning-fg);
-  width: 100%;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  padding: 0.4rem 0.75rem;
+  background: rgba(0, 0, 0, 0.04);
+  border-radius: 6px;
+  border: 1px solid var(--glass-border);
+}
+
+[data-theme="dark"] .compact-restrictions {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.compact-restrictions-value {
+  color: var(--text-main);
+  font-weight: 500;
 }
 
 /* --- TLD Selection Styles --- */
@@ -1559,6 +1572,55 @@ textarea#gen-prompt {
   border-color: var(--neutral-border);
 }
 
+/* Monitor Inputs (Sidebar) */
+.monitor-search,
+.monitor-sort {
+  width: 100%;
+  margin-top: 0.5rem;
+  padding: 0.55rem 0.75rem;
+  border-radius: 10px;
+  border: 1px solid var(--glass-border);
+  background: var(--input-bg);
+  color: var(--text-main);
+  font-family: var(--font-family);
+  font-size: 0.85rem;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.monitor-search:focus,
+.monitor-sort:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--focus-ring-soft);
+  outline: none;
+}
+
+.monitor-sort {
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 1em;
+  padding-right: 2.25rem;
+  margin-top: 0;
+}
+
+[data-theme="light"] .monitor-sort {
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23475569' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+}
+
+.monitor-sort-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-top: 0.5rem;
+}
+
+.monitor-count {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
 /* Domain Multi-select */
 .domain-multiselect-container {
   position: relative;
@@ -1646,9 +1708,10 @@ textarea#gen-prompt {
 .multiselect-item span {
   font-size: 0.85rem;
   color: var(--text-main);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-all;
+  line-height: 1.3;
 }
 
 /* Sort Controls */
@@ -2140,12 +2203,6 @@ textarea#gen-prompt {
   background-position: right 0.75rem center;
 }
 
-.favorites-count {
-  flex-shrink: 0;
-  font-size: 0.85rem;
-  color: var(--text-muted);
-}
-
 /* ── TLD profile bar (shared across tabs) ───────────────────────────────── */
 .tld-profile-bar {
   width: 100%;
@@ -2595,8 +2652,6 @@ textarea#gen-prompt {
   font-weight: 650;
   letter-spacing: 0.01em;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .favorites-cross-btn {
@@ -2675,7 +2730,7 @@ textarea#gen-prompt {
   align-items: center;
   gap: 0.25rem 0.45rem;
   margin: 0;
-  font-size: 0.68rem;
+  font-size: 0.72rem;
   color: var(--text-muted);
   line-height: 1.4;
 }
@@ -2712,14 +2767,9 @@ textarea#gen-prompt {
   resize: none;
 }
 
-/* In the grid layout, reduce horizontal padding so labels don't truncate */
+/* In the grid layout, reduce horizontal padding for compact fit */
 .fav-grid-card .fav-card-action-btn {
   padding: 0 0.4rem;
-}
-
-.fav-grid-card .fav-card-action-label {
-  overflow: visible;
-  text-overflow: clip;
 }
 
 /* Accessibility: respect reduced-motion preference */

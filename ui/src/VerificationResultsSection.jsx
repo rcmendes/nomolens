@@ -50,7 +50,12 @@ function VerificationCard({
   const checkedLabel = formatCheckedAt(result.checkedAt);
 
   const hasPrice = !result.error && result.data?.available && result.data.price;
-  const showTwoColumn = hasPrice;
+
+  let daysUntilExpiry = null;
+  if (status === 'expiring-soon' && result.data?.expirationDate) {
+    const expiry = new Date(result.data.expirationDate);
+    daysUntilExpiry = Math.ceil((expiry - new Date()) / (1000 * 60 * 60 * 24));
+  }
 
   const actionButtons = !result.loading && (
     <div className="compact-card-btn-row">
@@ -80,83 +85,73 @@ function VerificationCard({
 
   return (
     <div className={`compact-result-card glass status-${status}`}>
-      <div className={showTwoColumn ? 'compact-card-inner' : 'compact-card-inner compact-card-inner--full'}>
 
-        {/* LEFT / FULL: all textual content */}
-        <div className="compact-card-left">
-          {/* Domain name + badges + (when no price) inline action buttons */}
-          <div className="compact-header-row">
-            <span className="compact-domain">{domain}</span>
-            <div className="compact-badges">
-              {status === 'loading' && <span className="compact-badge checking">Checking…</span>}
-              {status === 'error' && <span className="compact-badge error">Error</span>}
-              {status === 'available' && <span className="compact-badge available">Available</span>}
-              {status === 'taken' && <span className="compact-badge taken">Taken</span>}
-              {status === 'unavailable' && <span className="compact-badge unavailable">Unavailable</span>}
-              {status === 'expiring-soon' && (
-                <>
-                  <span className="compact-badge taken">Taken</span>
-                  <span className="compact-badge soon">Expiring soon</span>
-                </>
-              )}
-            </div>
-            {/* Inline buttons for non-price cards */}
-            {!showTwoColumn && <div className="compact-header-actions">{actionButtons}</div>}
-          </div>
-
-          {/* Timestamp */}
-          {checkedLabel && !result.loading && (
-            <p className="compact-checked-at">Checked {checkedLabel}</p>
-          )}
-
-          {/* WHOIS grid + restrictions — stretch to full width when no price */}
-          {!result.loading && !result.error && result.data && (
-            <>
-              {!result.data.available && (
-                <div className="compact-info-grid">
-                  <div className="compact-info-col">
-                    <span className="compact-label">Owner</span>
-                    <span className="compact-value" title={result.data.owner || 'Unknown'}>
-                      {result.data.owner || 'Unknown'}
-                    </span>
-                  </div>
-                  <div className="compact-info-col">
-                    <span className="compact-label">Purchased</span>
-                    <span className="compact-value">
-                      {result.data.purchasedDate?.split('T')[0] || '-'}
-                    </span>
-                  </div>
-                  <div className="compact-info-col">
-                    <span className="compact-label">Expires</span>
-                    <span className="compact-value">
-                      {result.data.expirationDate?.split('T')[0] || '-'}
-                    </span>
-                  </div>
-                </div>
-              )}
-
-              {result.data.restrictions && (
-                <div className="compact-restrictions" title={result.data.restrictions.description}>
-                  <span className="compact-label">Restrictions:</span>{' '}
-                  {result.data.restrictions.countryRestriction}
-                </div>
-              )}
-            </>
-          )}
+      {/* Header: domain + badge + action buttons */}
+      <div className="compact-header-row">
+        <span className="compact-domain">{domain}</span>
+        <div className="compact-badges">
+          {status === 'loading' && <span className="compact-badge checking">Checking…</span>}
+          {status === 'error' && <span className="compact-badge error">Error</span>}
+          {status === 'available' && <span className="compact-badge available">Available</span>}
+          {status === 'taken' && <span className="compact-badge taken">Taken</span>}
+          {status === 'unavailable' && <span className="compact-badge unavailable">Unavailable</span>}
+          {status === 'expiring-soon' && <span className="compact-badge taken">Taken</span>}
         </div>
+        {!result.loading && <div className="compact-header-actions">{actionButtons}</div>}
+      </div>
 
-        {/* RIGHT: buttons on top + price beneath — only when price is shown */}
-        {showTwoColumn && !result.loading && (
-          <div className="compact-card-right">
-            {actionButtons}
-            <div className="compact-price-large">
+      {/* Timestamp + price for available domains */}
+      {(!result.loading) && (checkedLabel || hasPrice) && (
+        <div className="compact-card-meta">
+          {checkedLabel && <p className="compact-checked-at">Checked {checkedLabel}</p>}
+          {hasPrice && (
+            <span className="compact-price-inline">
               {result.data.currency === 'USD' ? '$' : result.data.currency + ' '}
               {result.data.price}
-            </div>
-          </div>
-        )}
+            </span>
+          )}
+        </div>
+      )}
 
-      </div>
+      {/* WHOIS info grid — owner full-width, dates side-by-side */}
+      {!result.loading && !result.error && result.data && !result.data.available && (
+        <div className="compact-info-grid">
+          <div className="compact-info-col compact-info-col--owner">
+            <span className="compact-label">Owner</span>
+            <span className="compact-value compact-value--wrap" title={result.data.owner || 'Unknown'}>
+              {result.data.owner || 'Unknown'}
+            </span>
+          </div>
+          <div className="compact-info-col compact-info-col--purchased">
+            <span className="compact-label">Purchased</span>
+            <span className="compact-value">
+              {result.data.purchasedDate?.split('T')[0] || '-'}
+            </span>
+          </div>
+          <div className="compact-info-col compact-info-col--expires">
+            <span className="compact-label">Expires</span>
+            <span className="compact-value">
+              {result.data.expirationDate?.split('T')[0] || '-'}
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* Expiry warning strip */}
+      {status === 'expiring-soon' && (
+        <div className="compact-expiry-warning">
+          ⚠ Expiring soon{daysUntilExpiry !== null ? ` — ${daysUntilExpiry} day${daysUntilExpiry !== 1 ? 's' : ''} remaining` : ''}
+        </div>
+      )}
+
+      {/* Restrictions */}
+      {!result.loading && !result.error && result.data?.restrictions && (
+        <div className="compact-restrictions" title={result.data.restrictions.description}>
+          <span className="compact-label">Restrictions:</span>{' '}
+          <span className="compact-restrictions-value">{result.data.restrictions.countryRestriction}</span>
+        </div>
+      )}
+
     </div>
   );
 }
@@ -308,145 +303,149 @@ const VerificationResultsSection = forwardRef(function VerificationResultsSectio
         Verification Results
       </h3>
 
-      <div className="results-toolbar">
-        <div className="filter-group">
-          <span className="filter-label">Filter by Status</span>
-          <div className="status-filter-pills">
-            <button
-              type="button"
-              className={`status-pill free ${filterStatuses.has('available') ? 'active' : ''}`}
-              onClick={() => toggleStatusFilter('available')}
-            >
-              Free
-            </button>
-            <button
-              type="button"
-              className={`status-pill expiring ${filterStatuses.has('expiring-soon') ? 'active' : ''}`}
-              onClick={() => toggleStatusFilter('expiring-soon')}
-            >
-              Expiring Soon
-            </button>
-            <button
-              type="button"
-              className={`status-pill taken ${filterStatuses.has('taken') ? 'active' : ''}`}
-              onClick={() => toggleStatusFilter('taken')}
-            >
-              Taken
-            </button>
-            <button
-              type="button"
-              className={`status-pill unavailable ${filterStatuses.has('unavailable') ? 'active' : ''}`}
-              onClick={() => toggleStatusFilter('unavailable')}
-            >
-              Unavailable
-            </button>
+      <div className="fav-tab-body">
+        <aside className="fav-tab-sidebar">
+          <div className="fav-sidebar-section">
+            <span className="filter-label">Filter by Status</span>
+            <div className="status-filter-pills fav-sidebar-pills">
+              <button
+                type="button"
+                className={`status-pill free ${filterStatuses.has('available') ? 'active' : ''}`}
+                onClick={() => toggleStatusFilter('available')}
+              >
+                Free
+              </button>
+              <button
+                type="button"
+                className={`status-pill expiring ${filterStatuses.has('expiring-soon') ? 'active' : ''}`}
+                onClick={() => toggleStatusFilter('expiring-soon')}
+              >
+                Expiring Soon
+              </button>
+              <button
+                type="button"
+                className={`status-pill taken ${filterStatuses.has('taken') ? 'active' : ''}`}
+                onClick={() => toggleStatusFilter('taken')}
+              >
+                Taken
+              </button>
+              <button
+                type="button"
+                className={`status-pill unavailable ${filterStatuses.has('unavailable') ? 'active' : ''}`}
+                onClick={() => toggleStatusFilter('unavailable')}
+              >
+                Unavailable
+              </button>
+            </div>
           </div>
-        </div>
 
-        <div className="filter-group">
-          <span className="filter-label" id="domain-multiselect-label">
-            Filter by Domain
-          </span>
-          <div className="domain-multiselect-container" ref={dropdownRef}>
-            <button
-              ref={triggerRef}
-              type="button"
-              className="multiselect-trigger"
-              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-              aria-expanded={isDropdownOpen}
-              aria-haspopup="listbox"
-              aria-labelledby="domain-multiselect-label"
-            >
-              {selectedDomainCount === allDomainNames.length
-                ? 'All Domains Selected'
-                : `${selectedDomainCount} selected`}
-              <span aria-hidden>▼</span>
-            </button>
-            {isDropdownOpen && (
-              <div className="multiselect-dropdown" role="listbox" aria-multiselectable="true">
-                <div className="multiselect-actions" role="group" aria-label="Domain selection shortcuts">
-                  <button type="button" className="multiselect-action-btn" onClick={selectAllDomains}>
-                    Select all
-                  </button>
-                  <button type="button" className="multiselect-action-btn" onClick={clearAllDomains}>
-                    Select none
-                  </button>
+          <div className="fav-sidebar-section">
+            <span className="filter-label" id="domain-multiselect-label">
+              Filter by Domain
+            </span>
+            <div className="domain-multiselect-container" ref={dropdownRef}>
+              <button
+                ref={triggerRef}
+                type="button"
+                className="multiselect-trigger"
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                aria-expanded={isDropdownOpen}
+                aria-haspopup="listbox"
+                aria-labelledby="domain-multiselect-label"
+              >
+                {selectedDomainCount === allDomainNames.length
+                  ? 'All Domains Selected'
+                  : `${selectedDomainCount} selected`}
+                <span aria-hidden>▼</span>
+              </button>
+              {isDropdownOpen && (
+                <div className="multiselect-dropdown" role="listbox" aria-multiselectable="true">
+                  <div className="multiselect-actions" role="group" aria-label="Domain selection shortcuts">
+                    <button type="button" className="multiselect-action-btn" onClick={selectAllDomains}>
+                      Select all
+                    </button>
+                    <button type="button" className="multiselect-action-btn" onClick={clearAllDomains}>
+                      Select none
+                    </button>
+                  </div>
+                  <input
+                    type="search"
+                    className="multiselect-search"
+                    placeholder="Search domains…"
+                    value={domainFilterQuery}
+                    onChange={(e) => setDomainFilterQuery(e.target.value)}
+                    aria-label="Filter domain list"
+                    autoFocus
+                  />
+                  <div className="multiselect-scroll">
+                    {filteredDomainNames.map((domain) => (
+                      <label key={domain} className="multiselect-item">
+                        <input
+                          type="checkbox"
+                          checked={!deselectedDomains.has(domain)}
+                          onChange={() => toggleDomainFilter(domain)}
+                        />
+                        <span>{domain}</span>
+                      </label>
+                    ))}
+                    {filteredDomainNames.length === 0 && (
+                      <p className="multiselect-empty">No matching domains</p>
+                    )}
+                  </div>
                 </div>
-                <input
-                  type="search"
-                  className="multiselect-search"
-                  placeholder="Search domains…"
-                  value={domainFilterQuery}
-                  onChange={(e) => setDomainFilterQuery(e.target.value)}
-                  aria-label="Filter domain list"
-                  autoFocus
+              )}
+            </div>
+          </div>
+
+          <div className="fav-sidebar-section">
+            <span className="filter-label">Sort</span>
+            <div className="monitor-sort-row">
+              <select
+                className="monitor-sort"
+                value={`${sortKey}:${sortDir}`}
+                onChange={(e) => {
+                  const [k, d] = e.target.value.split(':');
+                  setSortKey(k);
+                  setSortDir(d);
+                }}
+                aria-label="Sort results"
+              >
+                <option value="name:asc">Name (A→Z)</option>
+                <option value="name:desc">Name (Z→A)</option>
+                <option value="price:asc">Price (low→high)</option>
+                <option value="price:desc">Price (high→low)</option>
+                <option value="tld:asc">TLD (A→Z)</option>
+                <option value="tld:desc">TLD (Z→A)</option>
+              </select>
+              <span className="monitor-count" aria-label={`${filteredAndSortedEntries.length} shown`}>
+                {filteredAndSortedEntries.length} shown
+              </span>
+            </div>
+          </div>
+        </aside>
+
+        <ul className="fav-tab-grid" role="list">
+          {filteredAndSortedEntries.length > 0 ? (
+            filteredAndSortedEntries.map(([domain, result]) => (
+              <li key={domain} style={{ display: 'block' }}>
+                <VerificationCard
+                  domain={domain}
+                  result={result}
+                  isFavorite={isFavorite}
+                  addFavorite={addFavorite}
+                  removeFavorite={removeFavorite}
+                  onRefreshDomain={onRefreshDomain}
                 />
-                <div className="multiselect-scroll">
-                  {filteredDomainNames.map((domain) => (
-                    <label key={domain} className="multiselect-item">
-                      <input
-                        type="checkbox"
-                        checked={!deselectedDomains.has(domain)}
-                        onChange={() => toggleDomainFilter(domain)}
-                      />
-                      <span>{domain}</span>
-                    </label>
-                  ))}
-                  {filteredDomainNames.length === 0 && (
-                    <p className="multiselect-empty">No matching domains</p>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div className="sort-group">
-          <span className="filter-label">Sort by</span>
-          <div className="sort-controls">
-            <button
-              type="button"
-              className={`sort-btn ${sortKey === 'name' ? 'active' : ''}`}
-              onClick={() => handleSort('name')}
-            >
-              Name {sortKey === 'name' && (sortDir === 'asc' ? '↑' : '↓')}
-            </button>
-            <button
-              type="button"
-              className={`sort-btn ${sortKey === 'price' ? 'active' : ''}`}
-              onClick={() => handleSort('price')}
-            >
-              Price {sortKey === 'price' && (sortDir === 'asc' ? '↑' : '↓')}
-            </button>
-            <button
-              type="button"
-              className={`sort-btn ${sortKey === 'tld' ? 'active' : ''}`}
-              onClick={() => handleSort('tld')}
-            >
-              TLD {sortKey === 'tld' && (sortDir === 'asc' ? '↑' : '↓')}
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <div className="compact-results-list">
-        {filteredAndSortedEntries.length > 0 ? (
-          filteredAndSortedEntries.map(([domain, result]) => (
-            <VerificationCard
-              key={domain}
-              domain={domain}
-              result={result}
-              isFavorite={isFavorite}
-              addFavorite={addFavorite}
-              removeFavorite={removeFavorite}
-              onRefreshDomain={onRefreshDomain}
-            />
-          ))
-        ) : (
-          <p style={{ textAlign: 'center', padding: '2rem' }} className="text-muted">
-            No results match your filters.
-          </p>
-        )}
+              </li>
+            ))
+          ) : (
+            <li style={{ gridColumn: '1 / -1', listStyle: 'none' }}>
+              <p style={{ textAlign: 'center', padding: '2rem' }} className="text-muted">
+                No results match your filters.
+              </p>
+            </li>
+          )}
+        </ul>
       </div>
     </div>
   );
