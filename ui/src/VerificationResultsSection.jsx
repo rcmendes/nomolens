@@ -9,7 +9,7 @@ import React, {
 } from 'react';
 import { getEntryStatus } from './domainResultUtils';
 import ResultsCockpit from './ResultsCockpit';
-import { BellIcon, RefreshIcon, StarIcon } from './icons';
+import { RefreshIcon, StarIcon } from './icons';
 
 function formatCheckedAt(iso) {
   if (!iso) return null;
@@ -27,9 +27,6 @@ function VerificationCard({
   isFavorite,
   addFavorite,
   removeFavorite,
-  isMonitored,
-  addMonitored,
-  removeMonitored,
   onRefreshDomain,
 }) {
   const status = getEntryStatus(result);
@@ -50,28 +47,44 @@ function VerificationCard({
     }
   };
 
-  const monitoring = isMonitored(domain);
-  const handleMonitorToggle = (e) => {
-    e.stopPropagation();
-    if (monitoring) {
-      removeMonitored(domain);
-    } else {
-      addMonitored(domain, {
-        status,
-        price: result.data?.price,
-        currency: result.data?.currency,
-        expirationDate: result.data?.expirationDate,
-        whoisError: result.data?.whoisError,
-      });
-    }
-  };
-
   const checkedLabel = formatCheckedAt(result.checkedAt);
+
+  const hasPrice = !result.error && result.data?.available && result.data.price;
+  const showTwoColumn = hasPrice;
+
+  const actionButtons = !result.loading && (
+    <div className="compact-card-btn-row">
+      {onRefreshDomain && (
+        <button
+          type="button"
+          className="compact-refresh-btn"
+          onClick={() => onRefreshDomain(domain)}
+          aria-label={`Refresh check for ${domain}`}
+          title="Refresh this check"
+        >
+          <RefreshIcon size={16} />
+        </button>
+      )}
+      {!result.error && (
+        <button
+          className={`fav-star-btn ${faved ? 'faved' : ''}`}
+          onClick={handleFavToggle}
+          aria-label={faved ? `Remove ${domain} from favorites` : `Add ${domain} to favorites`}
+          title={faved ? 'Remove from favorites' : 'Add to favorites'}
+        >
+          <StarIcon filled={faved} size={18} />
+        </button>
+      )}
+    </div>
+  );
 
   return (
     <div className={`compact-result-card glass status-${status}`}>
-      <div className="compact-card-content">
-        <div className="compact-left">
+      <div className={showTwoColumn ? 'compact-card-inner' : 'compact-card-inner compact-card-inner--full'}>
+
+        {/* LEFT / FULL: all textual content */}
+        <div className="compact-card-left">
+          {/* Domain name + badges + (when no price) inline action buttons */}
           <div className="compact-header-row">
             <span className="compact-domain">{domain}</span>
             <div className="compact-badges">
@@ -87,25 +100,18 @@ function VerificationCard({
                 </>
               )}
             </div>
-            {onRefreshDomain && !result.loading && (
-              <button
-                type="button"
-                className="compact-refresh-btn"
-                onClick={() => onRefreshDomain(domain)}
-                aria-label={`Refresh check for ${domain}`}
-                title="Refresh this check"
-              >
-                <RefreshIcon size={16} />
-              </button>
-            )}
+            {/* Inline buttons for non-price cards */}
+            {!showTwoColumn && <div className="compact-header-actions">{actionButtons}</div>}
           </div>
 
+          {/* Timestamp */}
           {checkedLabel && !result.loading && (
             <p className="compact-checked-at">Checked {checkedLabel}</p>
           )}
 
+          {/* WHOIS grid + restrictions — stretch to full width when no price */}
           {!result.loading && !result.error && result.data && (
-            <div className="compact-body">
+            <>
               {!result.data.available && (
                 <div className="compact-info-grid">
                   <div className="compact-info-col">
@@ -135,42 +141,21 @@ function VerificationCard({
                   {result.data.restrictions.countryRestriction}
                 </div>
               )}
-            </div>
+            </>
           )}
         </div>
 
-        <div className="compact-actions">
-          {!result.loading && !result.error && (
-            <button
-              className={`monitor-btn ${monitoring ? 'active' : ''}`}
-              onClick={handleMonitorToggle}
-              aria-label={monitoring ? `Stop monitoring ${domain}` : `Monitor ${domain}`}
-              title={monitoring ? 'Stop monitoring' : 'Monitor domain'}
-            >
-              <BellIcon off={!monitoring} size={18} />
-            </button>
-          )}
-
-          {!result.loading && !result.error && (
-            <button
-              className={`fav-star-btn ${faved ? 'faved' : ''}`}
-              onClick={handleFavToggle}
-              aria-label={faved ? `Remove ${domain} from favorites` : `Add ${domain} to favorites`}
-              title={faved ? 'Remove from favorites' : 'Add to favorites'}
-            >
-              <StarIcon filled={faved} size={18} />
-            </button>
-          )}
-        </div>
-
-        {!result.loading && !result.error && result.data?.available && result.data.price && (
-          <div className="compact-right">
+        {/* RIGHT: buttons on top + price beneath — only when price is shown */}
+        {showTwoColumn && !result.loading && (
+          <div className="compact-card-right">
+            {actionButtons}
             <div className="compact-price-large">
               {result.data.currency === 'USD' ? '$' : result.data.currency + ' '}
               {result.data.price}
             </div>
           </div>
         )}
+
       </div>
     </div>
   );
@@ -182,9 +167,6 @@ const VerificationResultsSection = forwardRef(function VerificationResultsSectio
     isFavorite,
     addFavorite,
     removeFavorite,
-    isMonitored,
-    addMonitored,
-    removeMonitored,
     onRefreshDomain,
   },
   ref
@@ -457,9 +439,6 @@ const VerificationResultsSection = forwardRef(function VerificationResultsSectio
               isFavorite={isFavorite}
               addFavorite={addFavorite}
               removeFavorite={removeFavorite}
-              isMonitored={isMonitored}
-              addMonitored={addMonitored}
-              removeMonitored={removeMonitored}
               onRefreshDomain={onRefreshDomain}
             />
           ))

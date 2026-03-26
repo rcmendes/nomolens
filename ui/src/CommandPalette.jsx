@@ -20,7 +20,7 @@ export default function CommandPalette({
     const list = [
       { id: 'tab-search', label: 'Go to Direct Search', keywords: 'search check', run: () => setActiveTab('search') },
       { id: 'tab-gen', label: 'Go to Generate with AI', keywords: 'ai brainstorm', run: () => setActiveTab('generate') },
-      { id: 'tab-monitor', label: 'Go to Monitor List', keywords: 'watchlist monitor bell tracking', run: () => setActiveTab('monitor') },
+      { id: 'tab-favorites', label: 'Go to Favorites', keywords: 'favorites star tracking saved', run: () => setActiveTab('favorites') },
       { id: 'focus-search', label: 'Focus domain search field', keywords: 'input', run: () => focusSearchInput?.() },
       { id: 'focus-prompt', label: 'Focus AI prompt', keywords: 'generate', run: () => focusGenPrompt?.() },
     ];

@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import DirectSearchTab from './DirectSearchTab';
 import GeneratorTab from './GeneratorTab';
-import MonitorTab from './MonitorTab';
-import FavoritesPanel from './FavoritesPanel';
+import FavoritesTab from './FavoritesTab';
 import TldProfileBar from './TldProfileBar';
 import CommandPalette from './CommandPalette';
 import { getEntryStatus } from './domainResultUtils';
@@ -41,7 +40,7 @@ function AppInner() {
   const verificationSectionRef = useRef(null);
   const tabSearchRef = useRef(null);
   const tabGenerateRef = useRef(null);
-  const tabMonitorRef = useRef(null);
+  const tabFavoritesRef = useRef(null);
   const tabListRef = useRef(null);
 
   const [paletteOpen, setPaletteOpen] = useState(false);
@@ -75,7 +74,7 @@ function AppInner() {
   const [bulkResults, setBulkResults] = useState({});
   const [bulkVerifying, setBulkVerifying] = useState(false);
   const [verifyProgress, setVerifyProgress] = useState(null);
-  const FAV_KEY = 'nomoLens_favorites';
+  const FAV_KEY = 'nomoLens_monitored'; // previously the monitor list key, re-used to keep data
   const [favorites, setFavorites] = useState(() => {
     try {
       const raw = JSON.parse(localStorage.getItem(FAV_KEY) || '[]');
@@ -85,67 +84,18 @@ function AppInner() {
     }
   });
 
-  const MON_KEY = 'nomoLens_monitored';
-  const [monitored, setMonitored] = useState(() => {
-    try {
-      const raw = JSON.parse(localStorage.getItem(MON_KEY) || '[]');
-      return Array.isArray(raw) ? raw.map(normalizeFavoriteRow) : [];
-    } catch {
-      return [];
-    }
-  });
-
   const [recheckingDomain, setRecheckingDomain] = useState(null);
-  const [recheckingMonitoredDomain, setRecheckingMonitoredDomain] = useState(null);
 
   useEffect(() => {
     try {
       localStorage.setItem(FAV_KEY, JSON.stringify(favorites));
     } catch (e) {
-      console.warn('Failed to persist favorites', e);
+      console.warn('Failed to persist favorites list', e);
     }
   }, [favorites]);
 
-  useEffect(() => {
-    try {
-      localStorage.setItem(MON_KEY, JSON.stringify(monitored));
-    } catch (e) {
-      console.warn('Failed to persist monitored list', e);
-    }
-  }, [monitored]);
-
   const addFavorite = useCallback((domain, resultData) => {
     setFavorites((prev) => {
-      if (prev.some((f) => f.domain === domain)) return prev;
-      return [
-        normalizeFavoriteRow({
-          domain,
-          notes: '',
-          tags: '',
-          addedAt: new Date().toISOString(),
-          checkedAt: new Date().toISOString(),
-          ...resultData,
-        }),
-        ...prev,
-      ];
-    });
-  }, []);
-
-  const removeFavorite = useCallback((domain) => {
-    setFavorites((prev) => prev.filter((f) => f.domain !== domain));
-  }, []);
-
-  const updateFavoriteField = useCallback((domain, patch) => {
-    setFavorites((prev) => prev.map((f) => (f.domain === domain ? { ...f, ...patch } : f)));
-  }, []);
-
-  const isFavorite = useCallback(
-    (domain) => favorites.some((f) => f.domain === domain),
-    [favorites]
-  );
-
-  const addMonitored = useCallback((domain, resultData) => {
-    setMonitored((prev) => {
       if (prev.some((m) => m.domain === domain)) return prev;
       return [
         normalizeFavoriteRow({
@@ -161,17 +111,17 @@ function AppInner() {
     });
   }, []);
 
-  const removeMonitored = useCallback((domain) => {
-    setMonitored((prev) => prev.filter((m) => m.domain !== domain));
+  const removeFavorite = useCallback((domain) => {
+    setFavorites((prev) => prev.filter((m) => m.domain !== domain));
   }, []);
 
-  const updateMonitoredField = useCallback((domain, patch) => {
-    setMonitored((prev) => prev.map((m) => (m.domain === domain ? { ...m, ...patch } : m)));
+  const updateFavoriteField = useCallback((domain, patch) => {
+    setFavorites((prev) => prev.map((m) => (m.domain === domain ? { ...m, ...patch } : m)));
   }, []);
 
-  const isMonitored = useCallback(
-    (domain) => monitored.some((m) => m.domain === domain),
-    [monitored]
+  const isFavorite = useCallback(
+    (domain) => favorites.some((m) => m.domain === domain),
+    [favorites]
   );
 
   const CACHE_KEY = 'nomoLens_cache';
@@ -508,40 +458,6 @@ function AppInner() {
         const status = getEntryStatus(synthetic);
         if (!apiError && !data.available) saveToCache(domain, data);
         setFavorites((prev) =>
-          prev.map((f) =>
-            f.domain === domain
-              ? normalizeFavoriteRow({
-                  ...f,
-                  status,
-                  price: data?.price,
-                  currency: data?.currency,
-                  checkedAt: new Date().toISOString(),
-                  expirationDate: data?.expirationDate ?? null,
-                  whoisError: data?.whoisError ?? null,
-                })
-              : f
-          )
-        );
-      } catch (e) {
-        console.warn('Re-check failed', e);
-      } finally {
-        setRecheckingDomain(null);
-      }
-    },
-    [saveToCache]
-  );
-
-  const refreshMonitored = useCallback(
-    async (domain) => {
-      setRecheckingMonitoredDomain(domain);
-      try {
-        const res = await fetch(`${API_BASE}/api/check?domain=${encodeURIComponent(domain)}`);
-        const data = await res.json();
-        const apiError = !res.ok ? data.error || 'Error' : null;
-        const synthetic = { loading: false, data, error: apiError };
-        const status = getEntryStatus(synthetic);
-        if (!apiError && !data.available) saveToCache(domain, data);
-        setMonitored((prev) =>
           prev.map((m) =>
             m.domain === domain
               ? normalizeFavoriteRow({
@@ -557,9 +473,9 @@ function AppInner() {
           )
         );
       } catch (e) {
-        console.warn('Re-check monitored failed', e);
+        console.warn('Re-check failed', e);
       } finally {
-        setRecheckingMonitoredDomain(null);
+        setRecheckingDomain(null);
       }
     },
     [saveToCache]
@@ -570,7 +486,7 @@ function AppInner() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const tab = params.get('tab');
-    if (tab === 'generate' || tab === 'search' || tab === 'monitor') {
+    if (tab === 'generate' || tab === 'search' || tab === 'favorites') {
       setActiveTab(tab);
     }
     const q = params.get('q');
@@ -640,14 +556,14 @@ function AppInner() {
   const tldBarDisabled = generating;
 
   const onTabListKeyDown = (e) => {
-    const order = ['search', 'generate', 'monitor'];
+    const order = ['search', 'generate', 'favorites'];
     const i = order.indexOf(activeTab);
     if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
       e.preventDefault();
       const next = e.key === 'ArrowRight' ? (i + 1) % order.length : (i - 1 + order.length) % order.length;
       setActiveTab(order[next]);
       requestAnimationFrame(() => {
-        const refs = [tabSearchRef, tabGenerateRef, tabMonitorRef];
+        const refs = [tabSearchRef, tabGenerateRef, tabFavoritesRef];
         refs[next].current?.focus();
       });
     }
@@ -658,8 +574,8 @@ function AppInner() {
     }
     if (e.key === 'End') {
       e.preventDefault();
-      setActiveTab('monitor');
-      tabMonitorRef.current?.focus();
+      setActiveTab('favorites');
+      tabFavoritesRef.current?.focus();
     }
   };
 
@@ -708,8 +624,7 @@ function AppInner() {
       <div className="layout-wrapper">
         <div className="app-container">
           <header>
-            <h1>Nomo Lens</h1>
-            <p>Your ideas deserve the perfect name. Let's find it together.</p>
+            <img src="/logo.png" alt="Nomo Lens" className="app-logo" style={{ maxWidth: '800px', width: '100%', height: 'auto', marginBottom: '1rem', display: 'block', margin: '0 auto' }} />
           </header>
 
           <div
@@ -746,21 +661,21 @@ function AppInner() {
               Generate with AI
             </button>
             <button
-              ref={tabMonitorRef}
-              id="tab-monitor"
+              ref={tabFavoritesRef}
+              id="tab-favorites"
               role="tab"
               type="button"
-              aria-selected={activeTab === 'monitor'}
-              aria-controls="panel-monitor"
-              tabIndex={activeTab === 'monitor' ? 0 : -1}
-              className={`tab-btn ${activeTab === 'monitor' ? 'active' : ''}`}
-              onClick={() => setActiveTab('monitor')}
+              aria-selected={activeTab === 'favorites'}
+              aria-controls="panel-favorites"
+              tabIndex={activeTab === 'favorites' ? 0 : -1}
+              className={`tab-btn ${activeTab === 'favorites' ? 'active' : ''}`}
+              onClick={() => setActiveTab('favorites')}
             >
-              Monitor List
+              Favorites
             </button>
           </div>
 
-          {activeTab !== 'monitor' && (
+          {activeTab !== 'favorites' && (
             <TldProfileBar
               selectedTLDs={selectedTLDs}
               toggleTLD={toggleTLD}
@@ -790,9 +705,6 @@ function AppInner() {
               addFavorite={addFavorite}
               removeFavorite={removeFavorite}
               isFavorite={isFavorite}
-              addMonitored={addMonitored}
-              removeMonitored={removeMonitored}
-              isMonitored={isMonitored}
               verificationSectionRef={verificationSectionRef}
               onRefreshDomain={refreshDomainCheck}
               showVerificationResults={showDirectVerification}
@@ -834,9 +746,6 @@ function AppInner() {
               addFavorite={addFavorite}
               removeFavorite={removeFavorite}
               isFavorite={isFavorite}
-              addMonitored={addMonitored}
-              removeMonitored={removeMonitored}
-              isMonitored={isMonitored}
               verificationSectionRef={verificationSectionRef}
               onRefreshDomain={refreshDomainCheck}
               showVerificationResults={showGenerateVerification}
@@ -844,34 +753,20 @@ function AppInner() {
           </div>
 
           <div
-            id="panel-monitor"
+            id="panel-favorites"
             role="tabpanel"
-            aria-labelledby="tab-monitor"
-            hidden={activeTab !== 'monitor'}
+            aria-labelledby="tab-favorites"
+            hidden={activeTab !== 'favorites'}
           >
-            <MonitorTab
-              monitored={monitored}
-              removeMonitored={removeMonitored}
+            <FavoritesTab
+              favorites={favorites}
               removeFavorite={removeFavorite}
-              updateMonitoredField={updateMonitoredField}
-              onRecheckMonitored={refreshMonitored}
-              recheckingMonitoredDomain={recheckingMonitoredDomain}
-              addFavorite={addFavorite}
-              isFavorite={isFavorite}
+              updateFavoriteField={updateFavoriteField}
+              onRecheckFavorite={refreshFavorite}
+              recheckingDomain={recheckingDomain}
             />
           </div>
         </div>
-
-        <FavoritesPanel
-          favorites={favorites}
-          onRemove={removeFavorite}
-          onRecheck={refreshFavorite}
-          onUpdateFavorite={updateFavoriteField}
-          recheckingDomain={recheckingDomain}
-          addMonitored={addMonitored}
-          removeMonitored={removeMonitored}
-          isMonitored={isMonitored}
-        />
       </div>
     </div>
   );

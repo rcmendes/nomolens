@@ -127,9 +127,6 @@ const GeneratorTab = forwardRef(function GeneratorTab(
     addFavorite,
     removeFavorite,
     isFavorite,
-    addMonitored,
-    removeMonitored,
-    isMonitored,
     verificationSectionRef,
     onRefreshDomain,
     showVerificationResults,
@@ -505,9 +502,6 @@ const GeneratorTab = forwardRef(function GeneratorTab(
               isFavorite={isFavorite}
               addFavorite={addFavorite}
               removeFavorite={removeFavorite}
-              isMonitored={isMonitored}
-              addMonitored={addMonitored}
-              removeMonitored={removeMonitored}
               onRefreshDomain={onRefreshDomain}
             />
           )}
