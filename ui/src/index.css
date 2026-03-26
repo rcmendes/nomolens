@@ -64,6 +64,9 @@
   --neutral-border: rgba(100, 116, 139, 0.4);
   --neutral-fg: var(--text-muted);
 
+  --color-available: #22c55e;
+  --color-taken: #f87171;
+
   --spinner-track: rgba(255, 255, 255, 0.12);
 
   /* Tree surfaces (dark) */
@@ -106,6 +109,9 @@
   --neutral-bg: rgba(100, 116, 139, 0.12);
   --neutral-border: rgba(100, 116, 139, 0.3);
   --neutral-fg: #334155;
+
+  --color-available: #16a34a;
+  --color-taken: #ef4444;
 
   --spinner-track: rgba(15, 23, 42, 0.12);
 
@@ -1317,6 +1323,11 @@ textarea#gen-prompt {
   opacity: 1;
 }
 
+.domain-row-label:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 .domain-row-label--all {
   opacity: 1;
   color: var(--primary);
@@ -1371,6 +1382,10 @@ textarea#gen-prompt {
 
 .tld-pill--selected.tld-pill--available {
   background: color-mix(in oklab, var(--color-available, #22c55e) 22%, var(--tree-bg));
+}
+
+.tld-pill--selected.tld-pill--taken {
+  background: color-mix(in oklab, var(--color-taken, #f87171) 14%, var(--tree-bg));
 }
 
 /* Status: Taken */
