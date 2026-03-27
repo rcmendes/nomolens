@@ -2,6 +2,21 @@
  * Shared helpers for verification result entries and aggregate summaries.
  */
 
+export function normalizeFavoriteRow(f) {
+  return {
+    domain: f.domain,
+    status: f.status,
+    price: f.price,
+    currency: f.currency,
+    notes: f.notes ?? '',
+    tags: f.tags ?? '',
+    addedAt: f.addedAt ?? new Date().toISOString(),
+    checkedAt: f.checkedAt ?? null,
+    expirationDate: f.expirationDate ?? null,
+    whoisError: f.whoisError ?? null,
+  };
+}
+
 export function getEntryStatus(result) {
   if (result.loading) return 'loading';
   if (result.error) return 'error';

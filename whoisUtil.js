@@ -134,29 +134,42 @@ const UNKNOWN_RESULT = {
 };
 
 async function getDomainInfo(domainName) {
-  try {
-    const results = await whoisWithTimeout(domainName);
+  const attempt = async (isRetry = false) => {
+    try {
+      const results = await whoisWithTimeout(domainName);
 
-    let owner = results.registrantOrganization || results.registrantName || 'Unknown / Privacy Protected';
-    if (owner && owner.toLowerCase().includes('privacy')) {
-      owner = 'Privacy Protected';
+      let owner = results.registrantOrganization || results.registrantName || 'Unknown / Privacy Protected';
+      if (owner && owner.toLowerCase().includes('privacy')) {
+        owner = 'Privacy Protected';
+      }
+
+      const purchasedDate = results.creationDate || 'Unknown';
+      const expirationDate =
+        results.registryExpiryDate || results.registrarRegistrationExpirationDate || 'Unknown';
+
+      const tld = domainName.split('.').pop().toLowerCase();
+      const restrictions = RESTRICTIONS[tld] || {
+        description: 'Generally unrestricted.',
+        countryRestriction: 'None',
+      };
+
+      return { owner, purchasedDate, expirationDate, restrictions, whoisError: false };
+    } catch (error) {
+      if (!isRetry) {
+        const jitter = Math.floor(Math.random() * 2000) + 500;
+        if (process.env.NODE_ENV !== 'test') {
+          console.info(`[INFO] WHOIS failed for ${domainName}, retrying in ${jitter}ms...`);
+        }
+        await new Promise((resolve) => setTimeout(resolve, jitter));
+        return attempt(true);
+      }
+      
+      console.error(`[ERROR] WHOIS lookup failed for ${domainName} (Permanent):`, error.message);
+      return { ...UNKNOWN_RESULT, whoisError: true };
     }
+  };
 
-    const purchasedDate = results.creationDate || 'Unknown';
-    const expirationDate =
-      results.registryExpiryDate || results.registrarRegistrationExpirationDate || 'Unknown';
-
-    const tld = domainName.split('.').pop().toLowerCase();
-    const restrictions = RESTRICTIONS[tld] || {
-      description: 'Generally unrestricted.',
-      countryRestriction: 'None',
-    };
-
-    return { owner, purchasedDate, expirationDate, restrictions, whoisError: false };
-  } catch (error) {
-    console.error('WHOIS lookup failed for', domainName, error.message);
-    return { ...UNKNOWN_RESULT, whoisError: true };
-  }
+  return attempt();
 }
 
 module.exports = { getDomainInfo };

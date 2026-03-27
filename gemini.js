@@ -65,8 +65,16 @@ async function generateBaseNames({ prompt, keywords = [], prefixes = [], suffixe
       .map((k) => String(k).trim().toLowerCase())
       .filter((k) => k && !/\s/.test(k))
   )].slice(0, 5);
+
+  // Sanitise exclude list: alphanumeric + hyphen, max 63 chars, max 100 entries
+  const cleanExclude = (exclude || [])
+    .filter((e) => typeof e === 'string')
+    .map((e) => e.trim().toLowerCase().replace(/[^a-z0-9.-]/g, ''))
+    .filter((e) => e.length > 0 && e.length <= 63)
+    .slice(0, 100);
+
   const excludedBaseNames = new Set(
-    (exclude || []).map((d) => sanitizeBase(String(d).split('.')[0])).filter(Boolean)
+    cleanExclude.map((d) => sanitizeBase(String(d).split('.')[0])).filter(Boolean)
   );
 
   if (!apiKey) {
