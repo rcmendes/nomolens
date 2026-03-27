@@ -1,6 +1,6 @@
 import React, { useState, useEffect, forwardRef } from 'react';
 import VerificationResultsSection from './VerificationResultsSection';
-import { FieldInfo, FieldInfoIcon } from './FieldInfo';
+import { FieldInfo } from './FieldInfo';
 import { MicIcon } from './icons';
 
 const MAX_WEIGHTED_WORDS = 5;
@@ -152,6 +152,7 @@ function TreeNode({ base, domains, selectedDomains, onToggle, bulkVerifying, bul
 
 const GeneratorTab = forwardRef(function GeneratorTab(
   {
+    tldBar,
     genPrompt,
     setGenPrompt,
     genKeywords,
@@ -242,13 +243,21 @@ const GeneratorTab = forwardRef(function GeneratorTab(
   return (
     <section className="mode-section mode-section--static mode-section--wide glass">
       <h2 className="sr-only">Generate names with AI</h2>
-      <p className="lead-muted-center">
-        <SeedRootIcon />
-        Describe what you are building in plain language—we suggest memorable name roots you can pair with the
-        extensions you select in the bar above.
-      </p>
+      <div className="generator-lead">
+        <span className="generator-lead__eyebrow">
+          <SeedRootIcon /> name generator
+        </span>
+        <p className="generator-lead__copy">
+          Describe what you're building in{' '}
+          <span className="generator-lead__accent">plain language</span>
+          —we'll suggest{' '}
+          <span className="generator-lead__accent">memorable name roots</span>{' '}
+          to pair with the extensions below.
+        </p>
+      </div>
 
-      <form className="generator-form gen-form-grid" onSubmit={onGenerate}>
+      <form className="generator-form" onSubmit={onGenerate}>
+      <div className="gen-form-grid">
 
         {/* LEFT COLUMN */}
         <div className="gen-form-left">
@@ -381,7 +390,7 @@ const GeneratorTab = forwardRef(function GeneratorTab(
                 Add
               </button>
             </div>
-            <p style={{ marginTop: '0.35rem', color: 'var(--text-muted)', fontSize: '0.78rem' }}>
+            <p className="keyword-count-hint">
               {genKeywords.length}/{MAX_WEIGHTED_WORDS} focus words—each one nudges the AI more than the surrounding
               text.
             </p>
@@ -400,17 +409,21 @@ const GeneratorTab = forwardRef(function GeneratorTab(
 
           {/* Intro text for the right column (replaces accordion header) */}
           <div className="gen-form-right-intro">
-            <p className="advanced-panel-intro-text">
-              Optional hints for how names might sound—the model treats them as inspiration, not a checklist.
-            </p>
-            <FieldInfoIcon ariaLabel="More about fine-tuning name style">
+            <FieldInfo
+              label={
+                <p className="advanced-panel-intro-text">
+                  Optional hints for how names might sound—the model treats them as inspiration, not a checklist.
+                </p>
+              }
+              ariaLabel="More about fine-tuning name style"
+            >
               <p>
                 Prefixes and suffixes are comma-separated tokens (for example <code>get, try</code> or{' '}
                 <code>app, ly</code>). We pass them to the model as ideas it may blend in when they still feel
                 natural.
               </p>
               <p>You will not get every combination, and you can leave both fields empty.</p>
-            </FieldInfoIcon>
+            </FieldInfo>
           </div>
 
           {/* Prefixes + Suffixes always visible (no accordion) */}
@@ -455,7 +468,6 @@ const GeneratorTab = forwardRef(function GeneratorTab(
             </div>
           </div>
 
-          {/* Submit button at bottom of right column */}
           <button
             type="submit"
             className="search-btn generate-btn gen-submit-btn"
@@ -467,11 +479,15 @@ const GeneratorTab = forwardRef(function GeneratorTab(
         </div>
         {/* END RIGHT COLUMN */}
 
+      </div>
+
+      {tldBar}
+
       </form>
 
       {/* Error and loading states — sibling to form */}
       {genError && (
-        <div className="error-msg" role="alert" style={{ marginTop: '1rem' }}>
+        <div className="error-msg" role="alert">
           {genError}
         </div>
       )}

@@ -3,6 +3,7 @@ import VerificationResultsSection from './VerificationResultsSection';
 
 const DirectSearchTab = forwardRef(function DirectSearchTab(
   {
+    tldBar,
     query,
     setQuery,
     loading,
@@ -46,6 +47,7 @@ const DirectSearchTab = forwardRef(function DirectSearchTab(
             {loading ? 'Searching…' : 'Search all variants'}
           </button>
         </div>
+        {tldBar}
       </form>
 
       {error && (

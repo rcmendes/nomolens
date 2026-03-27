@@ -684,18 +684,6 @@ function AppInner() {
             </button>
           </div>
 
-          {activeTab !== 'favorites' && (
-            <TldProfileBar
-              selectedTLDs={selectedTLDs}
-              toggleTLD={toggleTLD}
-              customTLD={customTLD}
-              setCustomTLD={setCustomTLD}
-              customTLDError={customTLDError}
-              handleAddCustomTLD={handleAddCustomTLD}
-              disabled={tldBarDisabled}
-            />
-          )}
-
           <div
             id="panel-search"
             role="tabpanel"
@@ -704,6 +692,17 @@ function AppInner() {
           >
             <DirectSearchTab
               ref={searchInputRef}
+              tldBar={
+                <TldProfileBar
+                  selectedTLDs={selectedTLDs}
+                  toggleTLD={toggleTLD}
+                  customTLD={customTLD}
+                  setCustomTLD={setCustomTLD}
+                  customTLDError={customTLDError}
+                  handleAddCustomTLD={handleAddCustomTLD}
+                  disabled={tldBarDisabled}
+                />
+              }
               query={query}
               setQuery={setQuery}
               loading={loading}
@@ -728,6 +727,17 @@ function AppInner() {
           >
             <GeneratorTab
               ref={genPromptRef}
+              tldBar={
+                <TldProfileBar
+                  selectedTLDs={selectedTLDs}
+                  toggleTLD={toggleTLD}
+                  customTLD={customTLD}
+                  setCustomTLD={setCustomTLD}
+                  customTLDError={customTLDError}
+                  handleAddCustomTLD={handleAddCustomTLD}
+                  disabled={tldBarDisabled}
+                />
+              }
               genPrompt={genPrompt}
               setGenPrompt={setGenPrompt}
               genKeywords={genKeywords}
