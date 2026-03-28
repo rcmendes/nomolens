@@ -2182,28 +2182,51 @@ button.tld-chip.selected {
   display: block;
 }
 
-.selected .tld-chip-remove:hover {
-  background: rgba(0, 0, 0, 0.2);
-  color: #ff4d4d;
+.tld-chip.add-btn {
+  padding: 0;
+  width: 2.125rem;
+  justify-content: center;
+  border-style: dashed;
+  color: var(--secondary);
+  border-color: color-mix(in oklab, var(--secondary) 40%, var(--glass-border));
+  background: transparent;
 }
 
-.tld-chip svg {
-  display: block;
+.tld-chip.add-btn:hover {
+  background: color-mix(in oklab, var(--secondary) 10%, transparent);
+  border-color: var(--secondary);
+  border-style: solid;
+  transform: scale(1.05);
+}
+
+.tld-input-wrapper {
+  display: inline-flex;
+  align-items: center;
+  overflow: hidden;
+  animation: expandWidth 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes expandWidth {
+  from { width: 0; opacity: 0; }
+  to { width: 120px; opacity: 1; }
 }
 
 .tld-input-inline {
   field-sizing: content;
   min-width: 80px;
   max-width: 160px;
-  padding: 0.4rem 0.8rem;
+  height: 2.125rem;
+  padding: 0 1rem;
   background: var(--input-bg);
-  border: 4px dashed color-mix(in oklab, var(--primary) 55%, var(--glass-border));
-  border-radius: 12px;
+  border: 1px solid var(--primary);
+  border-radius: 9999px;
   color: var(--text-main);
   font-family: var(--font-family);
-  font-size: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
   outline: none;
-  transition: border-color 0.2s ease, border-style 0.2s ease;
+  transition: width 0.3s ease, border-color 0.2s ease, border-style 0.2s ease;
+  box-shadow: 0 0 15px rgba(182, 160, 255, 0.15);
 }
 
 .tld-input-inline:focus {
