@@ -716,26 +716,6 @@ header {
   padding-bottom: 0.75rem;
 }
 
-.editorial-status-label {
-  font-size: 0.7rem;
-  font-weight: 800;
-  letter-spacing: 0.15em;
-  text-transform: uppercase;
-  color: var(--text-muted);
-}
-
-.editorial-status-label.status-available {
-  color: var(--success-fg);
-}
-
-.editorial-status-label.status-taken {
-  color: var(--danger-fg);
-}
-
-.editorial-status-label.status-expiring-soon {
-  color: var(--warning-fg);
-}
-
 .editorial-timestamp {
   font-size: 0.7rem;
   color: var(--text-muted);
@@ -1019,6 +999,18 @@ header {
   background: var(--surface-highest);
   color: var(--text-main);
   transform: translateY(-1px);
+}
+
+.compact-refresh-btn:hover {
+  background: var(--surface-highest);
+  color: var(--primary);
+  border-color: var(--primary);
+  transform: translateY(-1px);
+}
+
+.compact-refresh-btn:focus svg,
+.compact-refresh-btn:hover svg {
+  animation: spin 1.5s linear infinite;
 }
 
 .tld-chip.selected {
@@ -3123,6 +3115,11 @@ textarea#gen-prompt {
   color: var(--text-muted);
 }
 
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
 /* ── Result card refresh & checked time ──────────────────────────────────── */
 .compact-refresh-btn {
   margin-left: auto;
@@ -3444,6 +3441,142 @@ textarea#gen-prompt {
 /* In the grid layout, reduce horizontal padding for compact fit */
 .fav-grid-card .fav-card-action-btn {
   padding: 0 0.4rem;
+}
+
+/* ── Favorites card: edit footer (refresh icon + notes toggle) ─────────── */
+.fav-card-edit-footer {
+  margin-top: 0.85rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--glass-border);
+  gap: 0.5rem;
+}
+
+/* Pill-shaped "Notes & Tags" toggle button */
+.fav-notes-toggle-btn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  height: 32px;
+  padding: 0 0.9rem;
+  border-radius: 9999px;
+  border: 1px solid var(--glass-border);
+  background: var(--input-bg);
+  color: var(--text-muted);
+  font-family: var(--font-family);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s, color 0.2s, transform 0.15s;
+}
+
+.fav-notes-toggle-btn:hover {
+  color: var(--text-main);
+  border-color: var(--primary);
+  background: color-mix(in oklab, var(--primary) 10%, transparent);
+  transform: translateY(-1px);
+}
+
+.fav-notes-toggle-btn.active {
+  color: var(--primary);
+  border-color: var(--primary);
+  background: color-mix(in oklab, var(--primary) 14%, transparent);
+}
+
+/* ── Collapsible Notes & Tags editor ────────────────────────────────────── */
+.fav-notes-editor {
+  margin-top: 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  padding: 1rem;
+  border-radius: 12px;
+  border: 1px solid var(--glass-border);
+  background: color-mix(in oklab, var(--input-bg) 60%, transparent);
+  animation: fadeSlideDown 0.18s ease-out;
+}
+
+@keyframes fadeSlideDown {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.fav-notes-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.fav-notes-label {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-muted);
+}
+
+.fav-notes-hint {
+  font-size: 0.62rem;
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: 0;
+  opacity: 0.65;
+}
+
+.fav-notes-textarea {
+  width: 100%;
+  min-height: 78px;
+  padding: 0.6rem 0.75rem;
+  border-radius: 10px;
+  border: 1px solid var(--glass-border);
+  background: var(--input-bg);
+  color: var(--text-main);
+  font-family: var(--font-family);
+  font-size: 0.83rem;
+  line-height: 1.55;
+  resize: vertical;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  box-sizing: border-box;
+}
+
+.fav-notes-textarea:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--focus-ring-soft);
+}
+
+.fav-notes-textarea::placeholder {
+  color: var(--text-muted);
+  opacity: 0.6;
+}
+
+.fav-tags-input {
+  width: 100%;
+  padding: 0.55rem 0.75rem;
+  border-radius: 10px;
+  border: 1px solid var(--glass-border);
+  background: var(--input-bg);
+  color: var(--text-main);
+  font-family: var(--font-family);
+  font-size: 0.83rem;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  box-sizing: border-box;
+}
+
+.fav-tags-input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--focus-ring-soft);
+}
+
+.fav-tags-input::placeholder {
+  color: var(--text-muted);
+  opacity: 0.6;
 }
 
 /* Accessibility: respect reduced-motion preference */

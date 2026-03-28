@@ -89,7 +89,6 @@ function VerificationCard({
       <div className="editorial-card-header">
         <div className="editorial-domain-wrap">
           <span className="editorial-domain" title={domain}>{domain}</span>
-          {status === 'available' && <span className="editorial-status-dot available" />}
         </div>
         {!result.loading && <div className="editorial-header-actions">{actionButtons}</div>}
       </div>
@@ -97,7 +96,11 @@ function VerificationCard({
       {/* Editorial Body: Visualizes status and key data in a stacked vertical grid */}
       <div className="editorial-card-body">
         <div className="editorial-status-line">
-          <span className={`editorial-status-label status-${status}`}>
+          <span className={`status-pill active ${
+            status === 'available' ? 'free' :
+            status === 'expiring-soon' ? 'expiring' :
+            status === 'taken' ? 'taken' : 'unavailable'
+          }`} style={{ padding: '0.2rem 0.75rem', fontSize: '0.75rem' }}>
             {status === 'loading' ? 'Verifying...' : status.replace('-', ' ')}
           </span>
           {!result.loading && checkedLabel && (

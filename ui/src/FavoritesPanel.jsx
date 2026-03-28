@@ -246,26 +246,44 @@ export default function FavoritesPanel({
                   {/* Card Header */}
                   <div className="editorial-card-header">
                     <div className="editorial-domain-wrap">
-                      {isAvailable && <span className="editorial-status-dot available" />}
                       <h4 className="editorial-domain" title={row.domain}>{row.domain}</h4>
                     </div>
                     <div className="editorial-header-actions">
-                      <button
-                        type="button"
-                        className="favorites-remove-btn"
-                        onClick={() => onRemove(row.domain)}
-                        aria-label={`Remove ${row.domain} from favorites`}
-                        title="Remove from favorites"
-                      >
-                        ✕
-                      </button>
+                      <div className="compact-card-btn-row">
+                        <button
+                          type="button"
+                          className="compact-refresh-btn"
+                          onClick={() => onRecheck?.(row.domain)}
+                          disabled={recheckingDomain === row.domain}
+                          aria-label={`Refresh check for ${row.domain}`}
+                          title={recheckingDomain === row.domain ? 'Updating…' : 'Refresh domain check'}
+                          style={recheckingDomain === row.domain ? { opacity: 0.5, cursor: 'wait' } : {}}
+                        >
+                          <RefreshIcon size={15} />
+                        </button>
+
+                        <button
+                          type="button"
+                          className="favorites-remove-btn"
+                          style={{ marginLeft: '4px' }}
+                          onClick={() => onRemove(row.domain)}
+                          aria-label={`Remove ${row.domain} from favorites`}
+                          title="Remove from favorites"
+                        >
+                          ✕
+                        </button>
+                      </div>
                     </div>
                   </div>
 
                   {/* Card Body */}
                   <div className="editorial-card-body">
                     <div className="editorial-status-line">
-                      <span className={`editorial-status-label status-${row.status}`}>
+                      <span className={`status-pill active ${
+                        row.status === 'available' ? 'free' :
+                        row.status === 'expiring-soon' ? 'expiring' :
+                        row.status === 'taken' ? 'taken' : 'unavailable'
+                      }`} style={{ padding: '0.2rem 0.75rem', fontSize: '0.75rem' }}>
                         {statusLabel(row.status)}
                       </span>
                       {hasChecked && (
@@ -302,58 +320,53 @@ export default function FavoritesPanel({
                       </div>
                     </div>
 
-                    {/* Collapsible notes & tags */}
-                    <div className="editorial-actions-footer">
-                      <div className="editorial-header-actions" style={{ marginTop: '1rem' }}>
-                        <button
-                          type="button"
-                          className={`nav-tab ${recheckingDomain === row.domain ? 'loading' : ''}`}
-                          style={{ padding: '0.4rem 1rem', fontSize: '0.75rem' }}
-                          onClick={() => onRecheck?.(row.domain)}
-                          disabled={recheckingDomain === row.domain}
-                        >
-                          {recheckingDomain === row.domain ? 'Updating...' : 'Refresh'}
-                        </button>
-                        <button
-                          type="button"
-                          className={`nav-tab ${isExpanded ? 'active' : ''}`}
-                          style={{ padding: '0.4rem 1rem', fontSize: '0.75rem' }}
-                          onClick={() => toggleExpanded(row.domain)}
-                        >
-                          {isExpanded ? 'Close' : 'Notes'}
-                        </button>
-                      </div>
+                    {/* Card footer: notes & tags toggle */}
+                    <div className="fav-card-actions fav-card-edit-footer">
+                      <button
+                        type="button"
+                        className={`fav-notes-toggle-btn${isExpanded ? ' active' : ''}`}
+                        onClick={() => toggleExpanded(row.domain)}
+                        aria-expanded={isExpanded}
+                        style={{ width: '100%' }}
+                      >
+                        <svg width={13} height={13} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"/>
+                        </svg>
+                        {isExpanded ? 'Close' : 'Notes & Tags'}
+                      </button>
+                    </div>
 
-                      {isExpanded && (
-                        <div className="editorial-data-item" style={{ marginTop: '1.5rem' }}>
-                          <span className="editorial-data-label">Notes</span>
+                    {/* Collapsible notes & tags editor */}
+                    {isExpanded && (
+                      <div className="fav-notes-editor">
+                        <div className="fav-notes-field">
+                          <label className="fav-notes-label" htmlFor={`notes-${row.domain}`}>
+                            Notes
+                          </label>
                           <textarea
-                            className="tld-input-inline"
-                            style={{ 
-                              width: '100%', 
-                              borderRadius: '12px', 
-                              marginTop: '0.5rem',
-                              minHeight: '80px',
-                              resize: 'vertical'
-                            }}
-                            placeholder="Add notes..."
+                            id={`notes-${row.domain}`}
+                            className="fav-notes-textarea"
+                            placeholder="Add notes…"
                             value={row.notes ?? ''}
                             onChange={(e) => onUpdateFavorite?.(row.domain, { notes: e.target.value })}
                           />
-                          <div style={{ marginTop: '1rem' }}>
-                            <span className="editorial-data-label">Edit Tags</span>
-                            <input
-                              type="text"
-                              className="tld-input-inline"
-                              style={{ width: '100%', borderRadius: '12px', marginTop: '0.5rem' }}
-                              placeholder="e.g. watch, client-a"
-                              value={row.tags ?? ''}
-                              onChange={(e) => onUpdateFavorite?.(row.domain, { tags: e.target.value })}
-                            />
-                          </div>
                         </div>
-                      )}
-                    </div>
+                        <div className="fav-notes-field">
+                          <label className="fav-notes-label" htmlFor={`tags-${row.domain}`}>
+                            Tags
+                            <span className="fav-notes-hint">comma-separated</span>
+                          </label>
+                          <input
+                            id={`tags-${row.domain}`}
+                            type="text"
+                            className="fav-tags-input"
+                            placeholder="e.g. watch, client-a, priority"
+                            value={row.tags ?? ''}
+                            onChange={(e) => onUpdateFavorite?.(row.domain, { tags: e.target.value })}
+                          />
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </li>
               );
