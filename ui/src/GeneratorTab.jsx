@@ -368,17 +368,22 @@ const GeneratorTab = forwardRef(function GeneratorTab(
                 <p>They are optional; the model still reads your full description when you do not add any.</p>
               </FieldInfo>
               <div className="tld-chips">
-                {genKeywords.map((keyword) => (
-                  <button
-                    key={keyword}
-                    type="button"
-                    className="tld-chip selected custom"
-                    onClick={() => handleRemoveGenKeyword(keyword)}
-                    disabled={generating}
-                    title="Remove this focus word"
-                  >
-                    {keyword} &times;
-                  </button>
+                {genKeywords.map((kw) => (
+                  <div key={kw} className="tld-chip selected">
+                    <span className="tld-chip-text">{kw}</span>
+                    <button
+                      type="button"
+                      className="tld-chip-remove"
+                      onClick={() => handleRemoveGenKeyword(kw)}
+                      aria-label={`Remove keyword ${kw}`}
+                      title="Remove keyword"
+                    >
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                      </svg>
+                    </button>
+                  </div>
                 ))}
               </div>
               <div className="custom-tld-input">

@@ -6,6 +6,8 @@ const PREDEFINED_TLDS = ['.com', '.io', '.co', '.ai', '.net', '.org', '.app', '.
 export default function TldProfileBar({
   selectedTLDs,
   toggleTLD,
+  customTLDs,
+  removeCustomTLD,
   customTLD,
   setCustomTLD,
   customTLDError,
@@ -37,19 +39,37 @@ export default function TldProfileBar({
               {tld}
             </button>
           ))}
-          {Array.from(selectedTLDs)
-            .filter((tld) => !PREDEFINED_TLDS.includes(tld))
+          {Array.from(customTLDs)
+            .sort()
             .map((tld) => (
-              <button
+              <div
                 key={tld}
-                type="button"
-                className="tld-chip selected custom"
-                onClick={() => toggleTLD(tld)}
-                disabled={disabled}
-                title="Remove custom TLD"
+                className={`tld-chip custom ${selectedTLDs.has(tld) ? 'selected' : ''}`}
               >
-                {tld} &times;
-              </button>
+                <button
+                  type="button"
+                  className="tld-chip-toggle-area"
+                  onClick={() => toggleTLD(tld)}
+                  disabled={disabled}
+                  aria-pressed={selectedTLDs.has(tld)}
+                  title={selectedTLDs.has(tld) ? 'Deselect TLD' : 'Select TLD'}
+                >
+                  {tld}
+                </button>
+                <button
+                  type="button"
+                  className="tld-chip-remove"
+                  onClick={() => removeCustomTLD(tld)}
+                  disabled={disabled}
+                  aria-label={`Remove ${tld}`}
+                  title="Remove from list"
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                  </svg>
+                </button>
+              </div>
             ))}
           <input
             type="text"

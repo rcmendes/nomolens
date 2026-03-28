@@ -3,6 +3,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 const TldContext = createContext();
 
 const TLD_STORAGE_KEY = 'nomoLens_selectedTLDs';
+const CUSTOM_TLDS_STORAGE_KEY = 'nomoLens_customTLDs';
 
 export const TldProvider = ({ children }) => {
   const [selectedTLDs, setSelectedTLDs] = useState(() => {
@@ -18,6 +19,19 @@ export const TldProvider = ({ children }) => {
     return new Set(['.com']); // Default
   });
 
+  const [customTLDs, setCustomTLDs] = useState(() => {
+    try {
+      const saved = localStorage.getItem(CUSTOM_TLDS_STORAGE_KEY);
+      if (saved) {
+        const list = JSON.parse(saved);
+        return new Set(list);
+      }
+    } catch (e) {
+      console.warn('Failed to hydrate custom TLD list', e);
+    }
+    return new Set();
+  });
+
   const [customTLD, setCustomTLD] = useState('');
   const [customTLDError, setCustomTLDError] = useState('');
 
@@ -29,6 +43,14 @@ export const TldProvider = ({ children }) => {
       console.warn('Failed to persist TLDs', e);
     }
   }, [selectedTLDs]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(CUSTOM_TLDS_STORAGE_KEY, JSON.stringify(Array.from(customTLDs)));
+    } catch (e) {
+      console.warn('Failed to persist custom TLD list', e);
+    }
+  }, [customTLDs]);
 
   const toggleTLD = useCallback((tld) => {
     setSelectedTLDs((prev) => {
@@ -56,14 +78,30 @@ export const TldProvider = ({ children }) => {
       return;
     }
     setCustomTLDError('');
+    setCustomTLDs((prev) => new Set([...prev, tld]));
     setSelectedTLDs((prev) => new Set([...prev, tld]));
     setCustomTLD('');
   }, [customTLD]);
+
+  const removeCustomTLD = useCallback((tld) => {
+    setCustomTLDs((prev) => {
+      const next = new Set(prev);
+      next.delete(tld);
+      return next;
+    });
+    setSelectedTLDs((prev) => {
+      const next = new Set(prev);
+      next.delete(tld);
+      return next;
+    });
+  }, []);
 
   const value = {
     selectedTLDs,
     setSelectedTLDs,
     toggleTLD,
+    customTLDs,
+    removeCustomTLD,
     customTLD,
     setCustomTLD,
     customTLDError,

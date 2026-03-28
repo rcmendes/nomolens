@@ -19,8 +19,8 @@ const FavoritesTab = lazy(() => import('./FavoritesTab'));
 function AppInner() {
   const toast = useToast();
   const { 
-    selectedTLDs, toggleTLD, customTLD, setCustomTLD, 
-    customTLDError, handleAddCustomTLD 
+    selectedTLDs, toggleTLD, customTLDs, removeCustomTLD,
+    customTLD, setCustomTLD, customTLDError, handleAddCustomTLD 
   } = useTld();
   
   const {
@@ -190,6 +190,8 @@ function AppInner() {
     <TldProfileBar
       selectedTLDs={selectedTLDs}
       toggleTLD={toggleTLD}
+      customTLDs={customTLDs}
+      removeCustomTLD={removeCustomTLD}
       customTLD={customTLD}
       setCustomTLD={setCustomTLD}
       customTLDError={customTLDError}
