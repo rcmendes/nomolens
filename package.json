@@ -10,7 +10,7 @@
     "ui:prod": "npm run build --prefix ui -- --mode prod",
     "dev": "ENV_FILE=.env.dev concurrently \"npm run server\" \"npm run ui:dev\"",
     "prod": "npm run ui:prod && ENV_FILE=.env.prod npm run start",
-    "build": "npm run ui:prod",
+    "build": "cd ui && npm install && npm run build -- --mode prod",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],

@@ -12,6 +12,8 @@ import { useToast } from './useToast';
 import { getEntryStatus } from './domainResultUtils';
 import LanguageSelector from './LanguageSelector';
 import { useTranslation } from 'react-i18next';
+import { Analytics } from '@vercel/analytics/react';
+import { SpeedInsights } from '@vercel/speed-insights/react';
 
 // Lazy loaded tab components
 const DirectSearchTab = lazy(() => import('./DirectSearchTab'));
@@ -362,7 +364,11 @@ function AppInner() {
 export default function App() {
   return (
     <ToastProvider>
-      <AppInner />
+      <>
+        <AppInner />
+        <Analytics />
+        <SpeedInsights />
+      </>
     </ToastProvider>
   );
 }
