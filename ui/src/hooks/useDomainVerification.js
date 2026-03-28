@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import pLimit from 'p-limit';
 import { getCachedResult, saveToCache } from '../utils/domainCache';
 
@@ -6,6 +7,7 @@ const API_BASE = import.meta.env.DEV ? 'http://localhost:3001' : '';
 const CONCURRENCY_LIMIT = 5;
 
 export const useDomainVerification = () => {
+  const { t } = useTranslation();
   const [bulkResults, setBulkResults] = useState({});
   const [bulkVerifying, setBulkVerifying] = useState(false);
   const [verifyProgress, setVerifyProgress] = useState(null);
@@ -17,13 +19,13 @@ export const useDomainVerification = () => {
     try {
       const res = await fetch(`${API_BASE}/api/check?domain=${encodeURIComponent(domain)}`);
       const data = await res.json();
-      const apiError = !res.ok ? data.error || 'Error' : null;
+      const apiError = !res.ok ? data.error || t('card.failedCheck') : null;
       if (!apiError && !data.available) {
         saveToCache(domain, data);
       }
       return { loading: false, data, error: apiError, checkedAt };
     } catch (e) {
-      return { loading: false, error: e.message || 'Network error', checkedAt };
+      return { loading: false, error: e.message || t('global.networkError'), checkedAt };
     }
   }, []);
 
@@ -95,7 +97,7 @@ export const useDomainVerification = () => {
     );
 
     if (fetchFailures === domainsRequiringFetch.length) {
-      setError('Could not verify domains. Check your connection and try again.');
+      setError(t('verification.errorConnection'));
     }
 
     setBulkVerifying(false);

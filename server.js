@@ -61,6 +61,10 @@ const DOMAIN_REGEX = /^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(\.[a-z]{2,})+$/i;
 
 const app = express();
 
+if (process.env.VERCEL) {
+  app.set('trust proxy', 1);
+}
+
 if (isDev) {
   console.info(chalk.yellow('[DEV] Development mode active — verbose API logging enabled'));
 }

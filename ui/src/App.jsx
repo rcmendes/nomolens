@@ -10,6 +10,8 @@ import { MoonIcon, SunIcon } from './icons';
 import { ToastProvider } from './ToastProvider';
 import { useToast } from './useToast';
 import { getEntryStatus } from './domainResultUtils';
+import LanguageSelector from './LanguageSelector';
+import { useTranslation } from 'react-i18next';
 
 // Lazy loaded tab components
 const DirectSearchTab = lazy(() => import('./DirectSearchTab'));
@@ -18,6 +20,7 @@ const FavoritesTab = lazy(() => import('./FavoritesTab'));
 
 function AppInner() {
   const toast = useToast();
+  const { t } = useTranslation();
   const { 
     selectedTLDs, toggleTLD, customTLDs, removeCustomTLD,
     customTLD, setCustomTLD, customTLDError, handleAddCustomTLD 
@@ -36,13 +39,13 @@ function AppInner() {
   // Wrap favorite actions with toast feedback
   const addFavorite = useCallback((domain, data) => {
     _addFavorite(domain, data);
-    toast.show(`Added ${domain} to favorites`, { kind: 'success' });
-  }, [_addFavorite, toast]);
+    toast.show(t('favorites.addedToast', { domain }), { kind: 'success' });
+  }, [_addFavorite, toast, t]);
 
   const removeFavorite = useCallback((domain) => {
     _removeFavorite(domain);
-    toast.show(`Removed ${domain} from favorites`, { kind: 'info' });
-  }, [_removeFavorite, toast]);
+    toast.show(t('favorites.removedToast', { domain }), { kind: 'info' });
+  }, [_removeFavorite, toast, t]);
 
   const {
     genPrompt, setGenPrompt, genKeywords, genKeywordInput, setGenKeywordInput,
@@ -73,7 +76,7 @@ function AppInner() {
     const platform = navigator.platform || '';
     return /Mac|iPhone|iPad|iPod/i.test(platform);
   }, []);
-  const paletteShortcutLabel = isMac ? '⌘K' : 'Ctrl K';
+  const paletteShortcutLabel = isMac ? t('global.paletteShortcutMac') : t('global.paletteShortcutWin');
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
@@ -160,11 +163,11 @@ function AppInner() {
     if (available.length === 0) return;
     try {
       await navigator.clipboard.writeText(available.join('\n'));
-      toast.show(`Copied ${available.length} domain${available.length === 1 ? '' : 's'} to clipboard`, {
+      toast.show(t('global.copiedSuccess', { count: available.length }), {
         kind: 'success',
       });
     } catch {
-      toast.show('Could not copy to clipboard', { kind: 'danger' });
+      toast.show(t('global.copyError'), { kind: 'danger' });
     }
   }, [bulkResults, toast]);
 
@@ -209,10 +212,11 @@ function AppInner() {
   return (
     <div className="page-shell">
       <div className="header-actions">
-        <button type="button" className="theme-toggle-btn" onClick={toggleTheme} aria-label="Toggle theme">
+        <LanguageSelector />
+        <button type="button" className="theme-toggle-btn" onClick={toggleTheme} aria-label={t('header.toggleTheme')}>
           {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
         </button>
-        <button type="button" className="command-palette-trigger-btn" onClick={() => setPaletteOpen(true)} aria-label="Open command palette">
+        <button type="button" className="command-palette-trigger-btn" onClick={() => setPaletteOpen(true)} aria-label={t('header.openPalette')}>
           {paletteShortcutLabel}
         </button>
       </div>
@@ -235,16 +239,16 @@ function AppInner() {
       <div className="layout-wrapper">
         <div className="app-container">
           <header className="brand-composition">
-            <img src="/logo.png" alt="Nomo Lens Logo" className="brand-logo-img" />
+            <img src="/logo.png" alt={t('brand.logoAlt')} className="brand-logo-img" />
             <div className="brand-text-content">
-              <div className="brand-eyebrow">AI · DOMAIN INTELLIGENCE</div>
+              <div className="brand-eyebrow">{t('brand.eyebrow')}</div>
               <div className="brand-text-container">
                 <span className="brand-nomo">Nomo</span>
                 <span className="brand-lens">Lens</span>
               </div>
               <div className="brand-tagline">
-                <span className="brand-tagline-line1">BRING YOUR IDEA.</span>
-                <span className="brand-tagline-line2">WE'LL FIND THE NAME.</span>
+                <span className="brand-tagline-line1">{t('brand.line1')}</span>
+                <span className="brand-tagline-line2">{t('brand.line2')}</span>
               </div>
             </div>
           </header>
@@ -262,10 +266,10 @@ function AppInner() {
                 className={`tab-btn ${activeTab === tab ? 'active' : ''}`}
                 onClick={() => setActiveTab(tab)}
               >
-                {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                {t(`tabs.${tab}`)}
                 {tab === 'favorites' && favorites.length > 0 && (
                   <>
-                    <span className="sr-only">({favorites.length} items)</span>
+                    <span className="sr-only">{t('tabs.itemsCount', { count: favorites.length })}</span>
                     <span className="tab-badge" aria-hidden="true">{favorites.length}</span>
                   </>
                 )}

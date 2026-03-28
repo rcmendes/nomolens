@@ -1,4 +1,5 @@
 import React, { useState, useEffect, forwardRef } from 'react';
+import { useTranslation, Trans } from 'react-i18next';
 import VerificationResultsSection from './VerificationResultsSection';
 import { FieldInfo } from './FieldInfo';
 import { MicIcon, PlusIcon } from './icons';
@@ -7,18 +8,7 @@ const MAX_WEIGHTED_WORDS = 5;
 /** Matches server.js /api/generate prompt length check */
 const MAX_PROMPT_CHARS = 1000;
 
-const VERIFY_PHRASES = [
-  'Sniffing the namespace...',
-  'Consulting the domain gods...',
-  'Baking possibilities in the DNS oven...',
-  'Shaking the domain tree...',
-  'Poking WHOIS with a stick...',
-  'Rummaging through digital real estate...',
-  'Asking the registry nicely...',
-  'Spelunking the TLD caves...',
-  'Summoning the registrar spirits...',
-  'Checking if someone beat us to it...',
-];
+
 
 function SeedRootIcon() {
   return (
@@ -40,6 +30,7 @@ function SeedRootIcon() {
 }
 
 function TldPill({ domain, selected, onToggle, disabled, bulkResults, tldOnly }) {
+  const { t } = useTranslation();
   const result = bulkResults[domain];
   const displayText = tldOnly ? domain.slice(domain.indexOf('.')) : domain;
 
@@ -48,16 +39,16 @@ function TldPill({ domain, selected, onToggle, disabled, bulkResults, tldOnly })
 
   if (result) {
     if (result.loading) {
-      statusLabel = 'Checking…';
+      statusLabel = t('card.checking');
       modifier = 'checking';
     } else if (result.error) {
-      statusLabel = 'Error';
+      statusLabel = t('card.error');
       modifier = 'error';
     } else if (result.data?.available) {
-      statusLabel = '✓ Free';
+      statusLabel = t('card.available');
       modifier = 'available';
     } else {
-      statusLabel = 'Taken';
+      statusLabel = t('card.taken');
       modifier = 'taken';
     }
   }
@@ -77,7 +68,7 @@ function TldPill({ domain, selected, onToggle, disabled, bulkResults, tldOnly })
       onClick={() => onToggle(domain)}
       disabled={disabled}
       aria-pressed={selected}
-      aria-label={`${selected ? 'Deselect' : 'Select'} ${domain}${statusLabel ? ` — ${statusLabel}` : ''}`}
+      aria-label={`${selected ? t('generate.deselectToggle', { domain }) : t('generate.selectToggle', { domain })}${statusLabel ? ` — ${statusLabel}` : ''}`}
     >
       <span className="tld-pill-domain">{displayText}</span>
       {statusLabel && <span className="tld-pill-status">{statusLabel}</span>}
@@ -86,6 +77,8 @@ function TldPill({ domain, selected, onToggle, disabled, bulkResults, tldOnly })
 }
 
 function TreeRoot({ bulkVerifying }) {
+  const { t } = useTranslation();
+  const phrases = t('generate.phrases', { returnObjects: true });
   const [phrase, setPhrase] = useState(null);
 
   useEffect(() => {
@@ -94,23 +87,24 @@ function TreeRoot({ bulkVerifying }) {
       return;
     }
     let idx = 0;
-    setPhrase(VERIFY_PHRASES[idx]);
+    setPhrase(phrases[idx]);
     const id = setInterval(() => {
-      idx = (idx + 1) % VERIFY_PHRASES.length;
-      setPhrase(VERIFY_PHRASES[idx]);
+      idx = (idx + 1) % phrases.length;
+      setPhrase(phrases[idx]);
     }, 2500);
     return () => clearInterval(id);
-  }, [bulkVerifying]);
+  }, [bulkVerifying, phrases]);
 
   return (
     <div className="tree-root-centered">
       <span className="tree-root-icon">◈</span>
-      <span className="tree-root-label">{phrase ?? 'Name seeds'}</span>
+      <span className="tree-root-label">{phrase ?? t('generate.nameSeeds')}</span>
     </div>
   );
 }
 
 function TreeNode({ base, domains, selectedDomains, onToggle, bulkVerifying, bulkResults, onToggleGroup }) {
+  const { t } = useTranslation();
   const allSelected = domains.every((d) => selectedDomains.has(d));
   const hasFreeDomain = domains.some((d) => bulkResults[d]?.data?.available);
 
@@ -122,8 +116,8 @@ function TreeNode({ base, domains, selectedDomains, onToggle, bulkVerifying, bul
           className={`tree-node-label ${allSelected ? 'tree-node-label--all' : ''}`}
           onClick={() => onToggleGroup(domains, !allSelected)}
           disabled={bulkVerifying}
-          aria-label={`${allSelected ? 'Deselect' : 'Select'} all variants for ${base}`}
-          title={`Click to ${allSelected ? 'deselect' : 'select'} all ${base} variants`}
+          aria-label={allSelected ? t('generate.deselectAll', { base }) : t('generate.selectAll', { base })}
+          title={allSelected ? t('generate.deselectAll', { base }) : t('generate.selectAll', { base })}
         >
           ● {base}
         </button>
@@ -186,6 +180,7 @@ const GeneratorTab = forwardRef(function GeneratorTab(
   },
   ref
 ) {
+  const { t } = useTranslation();
   const hasResult = generationResult !== null;
   const [isListening, setIsListening] = useState(false);
   const [dictationLang, setDictationLang] = useState('en-US');
@@ -198,7 +193,7 @@ const GeneratorTab = forwardRef(function GeneratorTab(
   const handleDictate = () => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
-      alert('Speech recognition is not supported in this browser.');
+      alert(t('generate.speechNotSupported'));
       return;
     }
 
@@ -247,7 +242,7 @@ const GeneratorTab = forwardRef(function GeneratorTab(
 
   return (
     <section className="mode-section mode-section--static mode-section--wide glass">
-      <h2 className="sr-only">Generate names with AI</h2>
+      <h2 className="sr-only">{t('generate.leadTitle')}</h2>
       <div className="generator-lead">
         <div className="generator-lead__eyebrow">
           <svg
@@ -263,14 +258,12 @@ const GeneratorTab = forwardRef(function GeneratorTab(
           >
             <path d="M7 13l5 5 5-5M7 6l5 5 5-5" />
           </svg>
-          NAME GENERATOR
+          {t('generate.leadTitle')}
         </div>
         <p className="generator-lead__copy">
-          Describe what you're building in{' '}
-          <span className="generator-lead__accent">plain language</span>
-          —we'll suggest{' '}
-          <span className="generator-lead__accent">memorable name roots</span>{' '}
-          to pair with the extensions below.
+          <Trans i18nKey="generate.leadCopy">
+            Describe what you're building in <span className="generator-lead__accent">plain language</span>—we'll suggest <span className="generator-lead__accent">memorable name roots</span> to pair with the extensions below.
+          </Trans>
         </p>
       </div>
 
@@ -285,25 +278,21 @@ const GeneratorTab = forwardRef(function GeneratorTab(
               <FieldInfo
                 label={
                   <label htmlFor="gen-prompt">
-                    What are you building? <span className="required">*</span>
+                    {t('generate.promptLabel')} <span className="required">*</span>
                   </label>
                 }
-                ariaLabel="More about the product description"
+                ariaLabel={t('generate.promptLabel')}
               >
                 <p>
-                  A short pitch works best: who it is for, the problem you solve, and the vibe you want. We send this
-                  text to the model as the main story behind your names.
+                  {t('generate.promptInfo1')}
                 </p>
-                <p>
-                  Suggestions are <strong>base names only</strong> (no ".com" in the list). Pick your TLDs in the
-                  profile bar—they apply when you verify availability.
-                </p>
+                <p dangerouslySetInnerHTML={{ __html: t('generate.promptInfo2') }} />
               </FieldInfo>
               <div className="prompt-textarea-wrapper">
                 <textarea
                   ref={ref}
                   id="gen-prompt"
-                  placeholder="e.g. A calm budgeting app for couples who want shared goals without the spreadsheet…"
+                  placeholder={t('generate.promptPlaceholder')}
                   value={genPrompt}
                   onChange={(e) => setGenPrompt(e.target.value)}
                   disabled={generating}
@@ -319,7 +308,7 @@ const GeneratorTab = forwardRef(function GeneratorTab(
                   id="gen-prompt-char-count"
                   className={`prompt-char-count${genPrompt.length >= MAX_PROMPT_CHARS ? ' prompt-char-count--max' : ''}`}
                 >
-                  {genPrompt.length}/{MAX_PROMPT_CHARS} characters
+                  {t('generate.charCount', { count: genPrompt.length, max: MAX_PROMPT_CHARS })}
                 </p>
                 {/* Mic button moved here from inside the textarea wrapper */}
                 <div className={`mic-split-btn ${isListening ? 'listening' : ''}`}>
@@ -328,8 +317,8 @@ const GeneratorTab = forwardRef(function GeneratorTab(
                     value={dictationLang}
                     onChange={(e) => setDictationLang(e.target.value)}
                     disabled={generating || isListening}
-                    title="Select dictation language"
-                    aria-label="Select dictation language"
+                    title={t('generate.dictationLang')}
+                    aria-label={t('generate.dictationLang')}
                   >
                     <option value="en-US">EN</option>
                     <option value="es-ES">ES</option>
@@ -342,8 +331,8 @@ const GeneratorTab = forwardRef(function GeneratorTab(
                     className="mic-split-action"
                     onClick={handleDictate}
                     disabled={generating}
-                    aria-label="Dictate prompt"
-                    title="Dictate prompt"
+                    aria-label={t('generate.dictatePrompt')}
+                    title={t('generate.dictatePrompt')}
                   >
                     <MicIcon isListening={isListening} />
                   </button>
@@ -356,16 +345,13 @@ const GeneratorTab = forwardRef(function GeneratorTab(
               <FieldInfo
                 label={
                   <span id="gen-keywords-label" className="field-section-label">
-                    Focus words (optional)
+                    {t('generate.focusWords')}
                   </span>
                 }
-                ariaLabel="More about focus words"
+                ariaLabel={t('generate.focusWords')}
               >
-                <p>
-                  Add up to five single words (no spaces) that should weigh more heavily than the rest of your
-                  description—think "trust," "speed," or a niche you want in the name.
-                </p>
-                <p>They are optional; the model still reads your full description when you do not add any.</p>
+                <p>{t('generate.focusWordsInfo1')}</p>
+                <p>{t('generate.focusWordsInfo2')}</p>
               </FieldInfo>
               <div className="tld-chips">
                 {genKeywords.map((kw) => (
@@ -375,8 +361,8 @@ const GeneratorTab = forwardRef(function GeneratorTab(
                       type="button"
                       className="tld-chip-remove"
                       onClick={() => handleRemoveGenKeyword(kw)}
-                      aria-label={`Remove keyword ${kw}`}
-                      title="Remove keyword"
+                      aria-label={t('generate.removeKeyword', { kw })}
+                      title={t('favorites.remove')}
                     >
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                         <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -389,7 +375,7 @@ const GeneratorTab = forwardRef(function GeneratorTab(
               <div className="custom-tld-input">
                 <input
                   type="text"
-                  placeholder="Type a word, then Add"
+                  placeholder={t('generate.focusWordsPlaceholder')}
                   value={genKeywordInput}
                   onChange={(e) => {
                     setGenKeywordInput(e.target.value);
@@ -411,12 +397,11 @@ const GeneratorTab = forwardRef(function GeneratorTab(
                   disabled={generating || !genKeywordInput.trim() || genKeywords.length >= MAX_WEIGHTED_WORDS}
                 >
                   <PlusIcon size={18} />
-                  <span>Add</span>
+                  <span>{t('generate.focusWordsAdd')}</span>
                 </button>
               </div>
               <p className="keyword-count-hint">
-                {genKeywords.length}/{MAX_WEIGHTED_WORDS} focus words—each one nudges the AI more than the surrounding
-                text.
+                {t('generate.focusWordsCount', { count: genKeywords.length, max: MAX_WEIGHTED_WORDS })}
               </p>
               {genKeywordError && (
                 <p className="tld-error-msg" role="alert">
@@ -436,17 +421,13 @@ const GeneratorTab = forwardRef(function GeneratorTab(
               <FieldInfo
                 label={
                   <p className="advanced-panel-intro-text">
-                    Optional hints for how names might sound—the model treats them as inspiration, not a checklist.
+                    {t('generate.advancedIntro')}
                   </p>
                 }
-                ariaLabel="More about fine-tuning name style"
+                ariaLabel={t('generate.advancedIntro')}
               >
-                <p>
-                  Prefixes and suffixes are comma-separated tokens (for example <code>get, try</code> or{' '}
-                  <code>app, ly</code>). We pass them to the model as ideas it may blend in when they still feel
-                  natural.
-                </p>
-                <p>You will not get every combination, and you can leave both fields empty.</p>
+                <p dangerouslySetInnerHTML={{ __html: t('generate.advancedInfo1') }} />
+                <p>{t('generate.advancedInfo2')}</p>
               </FieldInfo>
             </div>
 
@@ -454,18 +435,15 @@ const GeneratorTab = forwardRef(function GeneratorTab(
             <div className="form-row">
               <div className="form-group">
                 <FieldInfo
-                  label={<label htmlFor="gen-prefixes">Prefixes (optional)</label>}
-                  ariaLabel="More about prefixes"
+                  label={<label htmlFor="gen-prefixes">{t('generate.prefixesLabel')}</label>}
+                  ariaLabel={t('generate.prefixesLabel')}
                 >
-                  <p>
-                    Words or fragments that could appear <strong>before</strong> the core name. Separate entries with
-                    commas.
-                  </p>
+                  <p dangerouslySetInnerHTML={{ __html: t('generate.prefixesInfo') }} />
                 </FieldInfo>
                 <input
                   id="gen-prefixes"
                   type="text"
-                  placeholder="e.g. get, try, my"
+                  placeholder={t('generate.prefixesPlaceholder')}
                   value={genPrefixes}
                   onChange={(e) => setGenPrefixes(e.target.value)}
                   disabled={generating}
@@ -473,18 +451,15 @@ const GeneratorTab = forwardRef(function GeneratorTab(
               </div>
               <div className="form-group">
                 <FieldInfo
-                  label={<label htmlFor="gen-suffixes">Suffixes (optional)</label>}
-                  ariaLabel="More about suffixes"
+                  label={<label htmlFor="gen-suffixes">{t('generate.suffixesLabel')}</label>}
+                  ariaLabel={t('generate.suffixesLabel')}
                 >
-                  <p>
-                    Words or fragments that could appear <strong>after</strong> the core name. Separate entries with
-                    commas.
-                  </p>
+                  <p dangerouslySetInnerHTML={{ __html: t('generate.suffixesInfo') }} />
                 </FieldInfo>
                 <input
                   id="gen-suffixes"
                   type="text"
-                  placeholder="e.g. app, hq, tech"
+                  placeholder={t('generate.suffixesPlaceholder')}
                   value={genSuffixes}
                   onChange={(e) => setGenSuffixes(e.target.value)}
                   disabled={generating}
@@ -497,7 +472,7 @@ const GeneratorTab = forwardRef(function GeneratorTab(
               className="search-btn generate-btn gen-submit-btn"
               disabled={generating || !genPrompt.trim() || genPrompt.length > MAX_PROMPT_CHARS}
             >
-              {generating ? 'Cooking up names…' : 'Generate ideas'}
+              {generating ? t('generate.buttonLoading') : t('generate.buttonActive')}
             </button>
 
           </div>
@@ -520,7 +495,7 @@ const GeneratorTab = forwardRef(function GeneratorTab(
         <div className="loader-container">
           <div className="spinner" />
           <p className="text-muted">
-            Asking Gemini for fresh angles—usually just a few seconds.
+            {t('generate.loadingText')}
           </p>
         </div>
       )}
@@ -550,7 +525,7 @@ const GeneratorTab = forwardRef(function GeneratorTab(
             <div className="verify-action-container">
               {bulkVerifying && verifyProgress && (
                 <span className="verify-progress">
-                  {verifyProgress.done} / {verifyProgress.total} verified
+                  {t('generate.verifyProgress', { done: verifyProgress.done, total: verifyProgress.total })}
                 </span>
               )}
               <div className="verify-action-col">
@@ -559,12 +534,11 @@ const GeneratorTab = forwardRef(function GeneratorTab(
                   onClick={handleBulkVerify}
                   disabled={verifyDisabled}
                 >
-                  {bulkVerifying ? 'Verifying…' : `Verify Selected (${selectedDomains.size})`}
+                  {bulkVerifying ? t('generate.verifyingButton') : t('generate.verifyButton', { count: selectedDomains.size })}
                 </button>
                 {showVerifyHint && (
                   <p className="verify-hint" role="note">
-                    This selection matches your last verification. Pick different domains if you want to run a
-                    fresh check.
+                    {t('generate.verifyHint')}
                   </p>
                 )}
               </div>

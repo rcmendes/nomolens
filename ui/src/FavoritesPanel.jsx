@@ -1,4 +1,5 @@
 import React, { useCallback, useMemo, useState } from 'react';
+import { useTranslation, Trans } from 'react-i18next';
 import { RefreshIcon, StarIcon } from './icons';
 import { useToast } from './useToast';
 
@@ -11,14 +12,8 @@ function fmtDate(iso) {
   } catch { return null; }
 }
 
-function statusLabel(status) {
-  switch (status) {
-    case 'available':    return 'Free';
-    case 'taken':        return 'Taken';
-    case 'expiring-soon': return 'Expiring';
-    case 'unavailable':  return 'N/A';
-    default:             return status;
-  }
+function statusLabel(status, t) {
+  return t(`status.${status}`, { defaultValue: status });
 }
 
 function renderTags(tags) {
@@ -70,17 +65,18 @@ export default function FavoritesPanel({
   recheckingDomain,
 }) {
   const isEmpty = favorites.length === 0;
+  const { t } = useTranslation();
   const toast = useToast();
 
   const handleExportJson = useCallback(() => {
     exportJson(favorites);
-    toast.show('Exported favorites as JSON', { kind: 'success' });
-  }, [favorites, toast]);
+    toast.show(t('favorites.exportJsonSuccess'), { kind: 'success' });
+  }, [favorites, toast, t]);
 
   const handleExportCsv = useCallback(() => {
     exportCsv(favorites);
-    toast.show('Exported favorites as CSV', { kind: 'success' });
-  }, [favorites, toast]);
+    toast.show(t('favorites.exportCsvSuccess'), { kind: 'success' });
+  }, [favorites, toast, t]);
 
   const [filterStatuses, setFilterStatuses] = useState(
     new Set(['available', 'expiring-soon', 'taken', 'unavailable'])
@@ -144,7 +140,7 @@ export default function FavoritesPanel({
   }, [favorites, filterStatuses, domainQuery, sortKey, sortDir]);
 
   return (
-    <div className="favorites-panel favorites-panel--tab" aria-label="Favorites">
+    <div className="favorites-panel favorites-panel--tab" aria-label={t('favorites.title')}>
 
       {/* ── Header bar ── */}
       <div className="fav-tab-topbar">
@@ -153,7 +149,7 @@ export default function FavoritesPanel({
             <span className="favorites-star-icon" aria-hidden>
               <StarIcon filled size={16} />
             </span>
-            Favorites
+            {t('favorites.title')}
           </span>
           {favorites.length > 0 && (
             <span className="favorites-count">{favorites.length}</span>
@@ -163,10 +159,10 @@ export default function FavoritesPanel({
         {!isEmpty && (
           <div className="fav-tab-topbar-actions">
             <button type="button" className="favorites-export-btn" onClick={handleExportJson}>
-              Export JSON
+              {t('favorites.exportJson')}
             </button>
             <button type="button" className="favorites-export-btn" onClick={handleExportCsv}>
-              Export CSV
+              {t('favorites.exportCsv')}
             </button>
           </div>
         )}
@@ -177,9 +173,9 @@ export default function FavoritesPanel({
           <span className="favorites-empty-icon" aria-hidden>
             <StarIcon size={22} filled={false} />
           </span>
-          <p>No favorites yet.</p>
+          <p>{t('favorites.emptyTitle')}</p>
           <p className="favorites-empty-hint">
-            Star any result to save it here.
+            {t('favorites.emptyHint')}
           </p>
         </div>
       ) : (
@@ -188,13 +184,13 @@ export default function FavoritesPanel({
           {/* ── Left: Filters sidebar ── */}
           <aside className="fav-tab-sidebar">
             <div className="fav-sidebar-section">
-              <span className="filter-label">Filter by Status</span>
+              <span className="filter-label">{t('favorites.filterStatus')}</span>
               <div className="status-filter-pills fav-sidebar-pills">
                 {[
-                  { key: 'available',    label: 'Free',        cls: 'free' },
-                  { key: 'expiring-soon', label: 'Expiring Soon', cls: 'expiring' },
-                  { key: 'taken',        label: 'Taken',       cls: 'taken' },
-                  { key: 'unavailable',  label: 'Unavailable', cls: 'unavailable' },
+                  { key: 'available',    label: t('favorites.filterFree'),        cls: 'free' },
+                  { key: 'expiring-soon', label: t('favorites.filterExpiring'), cls: 'expiring' },
+                  { key: 'taken',        label: t('favorites.filterTaken'),       cls: 'taken' },
+                  { key: 'unavailable',  label: t('favorites.filterNa'), cls: 'unavailable' },
                 ].map(({ key, label, cls }) => (
                   <button
                     key={key}
@@ -209,19 +205,19 @@ export default function FavoritesPanel({
             </div>
 
             <div className="fav-sidebar-section">
-              <span className="filter-label">Search</span>
+              <span className="filter-label">{t('favorites.search')}</span>
               <input
                 className="monitor-search"
                 type="search"
-                placeholder="Filter domains…"
+                placeholder={t('favorites.searchPlaceholder')}
                 value={domainQuery}
                 onChange={(e) => setDomainQuery(e.target.value)}
-                aria-label="Filter favorites"
+                aria-label={t('favorites.searchPlaceholder')}
               />
             </div>
 
             <div className="fav-sidebar-section">
-              <span className="filter-label">Sort</span>
+              <span className="filter-label">{t('favorites.sort')}</span>
               <div className="monitor-sort-row">
                 <select
                   className="monitor-sort"
@@ -231,17 +227,17 @@ export default function FavoritesPanel({
                     setSortKey(k);
                     setSortDir(d);
                   }}
-                  aria-label="Sort favorites"
+                  aria-label={t('favorites.sortAria')}
                 >
-                  <option value="name:asc">Name (A→Z)</option>
-                  <option value="name:desc">Name (Z→A)</option>
-                  <option value="price:asc">Price (low→high)</option>
-                  <option value="price:desc">Price (high→low)</option>
-                  <option value="tld:asc">TLD (A→Z)</option>
-                  <option value="tld:desc">TLD (Z→A)</option>
+                  <option value="name:asc">{t('favorites.sortNameAsc')}</option>
+                  <option value="name:desc">{t('favorites.sortNameDesc')}</option>
+                  <option value="price:asc">{t('favorites.sortPriceAsc')}</option>
+                  <option value="price:desc">{t('favorites.sortPriceDesc')}</option>
+                  <option value="tld:asc">{t('favorites.sortTldAsc')}</option>
+                  <option value="tld:desc">{t('favorites.sortTldDesc')}</option>
                 </select>
-                <span className="monitor-count" aria-label={`${filteredAndSortedFavorites.length} shown`}>
-                  {filteredAndSortedFavorites.length} shown
+                <span className="monitor-count" aria-label={t('favorites.shownCount', { count: filteredAndSortedFavorites.length })}>
+                  {t('favorites.shownCount', { count: filteredAndSortedFavorites.length })}
                 </span>
               </div>
             </div>
@@ -269,8 +265,8 @@ export default function FavoritesPanel({
                           className="compact-refresh-btn"
                           onClick={() => onRecheck?.(row.domain)}
                           disabled={recheckingDomain === row.domain}
-                          aria-label={`Refresh check for ${row.domain}`}
-                          title={recheckingDomain === row.domain ? 'Updating…' : 'Refresh domain check'}
+                          aria-label={t('card.refreshDomainAria', { domain: row.domain })}
+                          title={recheckingDomain === row.domain ? t('card.refreshing') : t('card.refreshDomain')}
                           style={recheckingDomain === row.domain ? { opacity: 0.5, cursor: 'wait' } : {}}
                         >
                           <RefreshIcon size={15} />
@@ -281,8 +277,8 @@ export default function FavoritesPanel({
                           className="favorites-remove-btn"
                           style={{ marginLeft: '4px' }}
                           onClick={() => onRemove(row.domain)}
-                          aria-label={`Remove ${row.domain} from favorites`}
-                          title="Remove from favorites"
+                          aria-label={t('card.removeFavoriteAria', { domain: row.domain })}
+                          title={t('favorites.remove')}
                         >
                           ✕
                         </button>
@@ -298,11 +294,11 @@ export default function FavoritesPanel({
                         row.status === 'expiring-soon' ? 'expiring' :
                         row.status === 'taken' ? 'taken' : 'unavailable'
                       }`} style={{ padding: '0.2rem 0.75rem', fontSize: '0.75rem' }}>
-                        {statusLabel(row.status)}
+                        {statusLabel(row.status, t)}
                       </span>
                       {hasChecked && (
                         <span className="editorial-timestamp">
-                          Checked {fmtDate(row.checkedAt)}
+                          {t('card.checkedOn')} {fmtDate(row.checkedAt)}
                         </span>
                       )}
                     </div>
@@ -310,7 +306,7 @@ export default function FavoritesPanel({
                     <div className="editorial-data-grid">
                       {isAvailable && row.price != null && (
                         <div className="editorial-data-item highlight">
-                          <span className="editorial-data-label">Price Estimate</span>
+                          <span className="editorial-data-label">{t('card.priceLabel')}</span>
                           <span className="editorial-data-value price">
                             {row.currency === 'USD' ? '$' : `${row.currency ?? ''} `}
                             {row.price}
@@ -321,7 +317,7 @@ export default function FavoritesPanel({
                       <div className="editorial-data-row">
                         {hasExpiry && (
                           <div className="editorial-data-item">
-                            <span className="editorial-data-label">Expires</span>
+                            <span className="editorial-data-label">{t('card.expiresLabel')}</span>
                             <span className="editorial-data-value">{fmtDate(row.expirationDate)}</span>
                           </div>
                         )}
@@ -329,7 +325,7 @@ export default function FavoritesPanel({
 
                       {row.tags && (
                         <div className="editorial-data-item">
-                          <span className="editorial-data-label">Tags</span>
+                          <span className="editorial-data-label">{t('favorites.tags')}</span>
                           <div className="editorial-data-value">
                             {renderTags(row.tags)}
                           </div>
@@ -349,7 +345,7 @@ export default function FavoritesPanel({
                         <svg width={13} height={13} viewBox="0 0 24 24" fill="none" aria-hidden="true">
                           <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"/>
                         </svg>
-                        {isExpanded ? 'Close' : 'Notes & Tags'}
+                        {isExpanded ? t('favorites.close') : t('favorites.notesAndTags')}
                       </button>
                     </div>
 
@@ -358,26 +354,26 @@ export default function FavoritesPanel({
                       <div className="fav-notes-editor">
                         <div className="fav-notes-field">
                           <label className="fav-notes-label" htmlFor={`notes-${row.domain}`}>
-                            Notes
+                            {t('favorites.notes')}
                           </label>
                           <textarea
                             id={`notes-${row.domain}`}
                             className="fav-notes-textarea"
-                            placeholder="Add notes…"
+                            placeholder={t('favorites.notesPlaceholder')}
                             value={row.notes ?? ''}
                             onChange={(e) => onUpdateFavorite?.(row.domain, { notes: e.target.value })}
                           />
                         </div>
                         <div className="fav-notes-field">
                           <label className="fav-notes-label" htmlFor={`tags-${row.domain}`}>
-                            Tags
-                            <span className="fav-notes-hint">comma-separated keywords</span>
+                            {t('favorites.tags')}
+                            <span className="fav-notes-hint">{t('favorites.tagsHint')}</span>
                           </label>
                           <input
                             id={`tags-${row.domain}`}
                             type="text"
                             className="fav-tags-input"
-                            placeholder="e.g. watch, work, priority"
+                            placeholder={t('favorites.tagsPlaceholder')}
                             value={row.tags ?? ''}
                             onChange={(e) => onUpdateFavorite?.(row.domain, { tags: e.target.value })}
                           />

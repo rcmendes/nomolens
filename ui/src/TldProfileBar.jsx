@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { FieldInfo } from './FieldInfo.jsx';
 
 const PREDEFINED_TLDS = ['.com', '.io', '.co', '.ai', '.net', '.org', '.app', '.dev', '.tech', '.me', '.pro'];
@@ -14,6 +15,7 @@ export default function TldProfileBar({
   handleAddCustomTLD,
   disabled,
 }) {
+  const { t } = useTranslation();
   const [isAdding, setIsAdding] = useState(false);
   const inputRef = useRef(null);
 
@@ -35,19 +37,15 @@ export default function TldProfileBar({
   };
 
   return (
-    <section className="tld-profile-bar" aria-label="TLD preferences">
+    <section className="tld-profile-bar" aria-label={t('tlds.preferencesAria')}>
       <div className="tld-profile-inner">
         <FieldInfo
-          label={<span className="tld-profile-label">TLDs</span>}
-          ariaLabel="About custom TLDs"
+          label={<span className="tld-profile-label">{t('tlds.label')}</span>}
+          ariaLabel={t('tlds.label')}
         >
-          <p>
-            Click any TLD to toggle it. Type a custom one (e.g. <code>.xyz</code>) in the
-            input and press <strong>Enter</strong> to add it — custom TLDs are saved in
-            your browser and persist across sessions.
-          </p>
+          <p dangerouslySetInnerHTML={{ __html: t('tlds.info') }} />
         </FieldInfo>
-        <div className="tld-chips" role="group" aria-label="Select target TLDs">
+        <div className="tld-chips" role="group" aria-label={t('tlds.selectionAria')}>
           {PREDEFINED_TLDS.map((tld) => (
             <div
               key={tld}
@@ -59,7 +57,7 @@ export default function TldProfileBar({
                 onClick={() => toggleTLD(tld)}
                 disabled={disabled}
                 aria-pressed={selectedTLDs.has(tld)}
-                title={selectedTLDs.has(tld) ? 'Deselect TLD' : 'Select TLD'}
+                title={selectedTLDs.has(tld) ? t('tlds.deselect') : t('tlds.select')}
               >
                 {tld}
               </button>
@@ -78,7 +76,7 @@ export default function TldProfileBar({
                   onClick={() => toggleTLD(tld)}
                   disabled={disabled}
                   aria-pressed={selectedTLDs.has(tld)}
-                  title={selectedTLDs.has(tld) ? 'Deselect TLD' : 'Select TLD'}
+                  title={selectedTLDs.has(tld) ? t('tlds.deselect') : t('tlds.select')}
                 >
                   {tld}
                 </button>
@@ -87,8 +85,8 @@ export default function TldProfileBar({
                   className="tld-chip-remove"
                   onClick={() => removeCustomTLD(tld)}
                   disabled={disabled}
-                  aria-label={`Remove ${tld}`}
-                  title="Remove from list"
+                  aria-label={t('tlds.remove', { tld })}
+                  title={t('tlds.remove', { tld })}
                 >
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                     <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -104,7 +102,7 @@ export default function TldProfileBar({
                 ref={inputRef}
                 type="text"
                 className="tld-input-inline expanded"
-                placeholder=".xyz"
+                placeholder={t('tlds.inputPlaceholder')}
                 value={customTLD}
                 onChange={(e) => setCustomTLD(e.target.value)}
                 onBlur={handleInputBlur}
@@ -118,7 +116,7 @@ export default function TldProfileBar({
                   }
                 }}
                 disabled={disabled}
-                aria-label="Custom TLD input"
+                aria-label={t('tlds.customAria')}
               />
             </div>
           ) : (
@@ -127,8 +125,8 @@ export default function TldProfileBar({
               className="tld-chip add-btn"
               onClick={handleToggleAdd}
               disabled={disabled}
-              title="Add custom TLD"
-              aria-label="Add custom TLD"
+              title={t('tlds.addCustom')}
+              aria-label={t('tlds.addCustom')}
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="12" y1="5" x2="12" y2="19"></line>

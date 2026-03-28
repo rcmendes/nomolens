@@ -1,8 +1,10 @@
 import { useState, useCallback, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 
 const API_BASE = import.meta.env.DEV ? 'http://localhost:3001' : '';
 
 export const useGenerator = () => {
+  const { t } = useTranslation();
   const [genPrompt, setGenPrompt] = useState('');
   const [genKeywords, setGenKeywords] = useState([]);
   const [genKeywordInput, setGenKeywordInput] = useState('');
@@ -51,7 +53,7 @@ export const useGenerator = () => {
         }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to generate names');
+      if (!res.ok) throw new Error(data.error || t('generate.errorFailed'));
 
       setGenerationResult(data);
 
@@ -83,18 +85,18 @@ export const useGenerator = () => {
     if (!raw) return;
 
     if (/\s/.test(raw)) {
-      setGenKeywordError('Each weighted word must be a single token (no spaces).');
+      setGenKeywordError(t('generate.errorSingleToken'));
       return;
     }
 
     if (genKeywords.length >= 5) {
-      setGenKeywordError('You can add up to 5 weighted words.');
+      setGenKeywordError(t('generate.errorMaxWords'));
       return;
     }
 
     const normalized = raw.toLowerCase();
     if (genKeywords.includes(normalized)) {
-      setGenKeywordError('This weighted word is already added.');
+      setGenKeywordError(t('generate.errorDuplicateWord'));
       return;
     }
 

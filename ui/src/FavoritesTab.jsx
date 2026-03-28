@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation, Trans } from 'react-i18next';
 import FavoritesPanel from './FavoritesPanel';
 
 export default function FavoritesTab({
@@ -8,13 +9,13 @@ export default function FavoritesTab({
   onRecheckFavorite,
   recheckingDomain,
 }) {
+  const { t } = useTranslation();
   return (
     <section className="mode-section mode-section--static mode-section--wide glass">
       <div className="monitor-header">
-        <h2 className="mb-1">Favorites</h2>
+        <h2 className="mb-1">{t('favorites.title')}</h2>
         <p className="text-muted mb-6" style={{ fontSize: '0.9rem' }}>
-          Keep track of domains you care about, even if they are currently taken. Re-check anytime
-          for status updates.
+          {t('favorites.description')}
         </p>
       </div>
 

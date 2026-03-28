@@ -1,6 +1,7 @@
 {
   "version": 2,
-  "name": "domain-horizon",
+  "name": "nomolens",
+  "installCommand": "npm install && npm install --prefix ui --no-audit --no-fund",
   "builds": [
     {
       "src": "package.json",

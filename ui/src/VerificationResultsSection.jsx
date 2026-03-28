@@ -7,6 +7,7 @@ import React, {
   useImperativeHandle,
   useCallback,
 } from 'react';
+import { useTranslation } from 'react-i18next';
 import { getEntryStatus } from './domainResultUtils';
 import ResultsCockpit from './ResultsCockpit';
 import { RefreshIcon, StarIcon } from './icons';
@@ -29,6 +30,7 @@ function VerificationCard({
   removeFavorite,
   onRefreshDomain,
 }) {
+  const { t } = useTranslation();
   const status = getEntryStatus(result);
   const faved = isFavorite(domain);
 
@@ -64,8 +66,8 @@ function VerificationCard({
           type="button"
           className="compact-refresh-btn"
           onClick={() => onRefreshDomain(domain)}
-          aria-label={`Refresh check for ${domain}`}
-          title="Refresh this check"
+          aria-label={t('card.refreshDomainAria', { domain })}
+          title={t('card.refreshDomain')}
         >
           <RefreshIcon size={16} />
         </button>
@@ -74,8 +76,8 @@ function VerificationCard({
         <button
           className={`fav-star-btn ${faved ? 'faved' : ''}`}
           onClick={handleFavToggle}
-          aria-label={faved ? `Remove ${domain} from favorites` : `Add ${domain} to favorites`}
-          title={faved ? 'Remove from favorites' : 'Add to favorites'}
+          aria-label={faved ? t('card.removeFavoriteAria', { domain }) : t('card.addFavoriteAria', { domain })}
+          title={faved ? t('card.unfavorite') : t('card.favorite')}
         >
           <StarIcon filled={faved} size={18} />
         </button>
@@ -101,10 +103,10 @@ function VerificationCard({
             status === 'expiring-soon' ? 'expiring' :
             status === 'taken' ? 'taken' : 'unavailable'
           }`} style={{ padding: '0.2rem 0.75rem', fontSize: '0.75rem' }}>
-            {status === 'loading' ? 'Verifying...' : status.replace('-', ' ')}
+            {status === 'loading' ? t('verification.verifying') : t(`status.${status}`)}
           </span>
           {!result.loading && checkedLabel && (
-            <span className="editorial-timestamp">As of {checkedLabel}</span>
+            <span className="editorial-timestamp">{t('verification.asOf', { checkedLabel })}</span>
           )}
         </div>
 
@@ -112,7 +114,7 @@ function VerificationCard({
           <div className="editorial-data-grid">
             {result.data.available ? (
               <div className="editorial-data-item highlight">
-                <span className="editorial-data-label">Registration Price</span>
+                <span className="editorial-data-label">{t('card.registrationPrice')}</span>
                 <span className="editorial-data-value price">
                   {result.data.currency === 'USD' ? '$' : result.data.currency + ' '}
                   {result.data.price || '—'}
@@ -121,22 +123,22 @@ function VerificationCard({
             ) : (
               <>
                 <div className="editorial-data-item">
-                  <span className="editorial-data-label">Registered To</span>
-                  <span className="editorial-data-value" title={result.data.owner || 'Hidden'}>
-                    {result.data.owner || 'Privately Held'}
+                  <span className="editorial-data-label">{t('card.registeredTo')}</span>
+                  <span className="editorial-data-value" title={result.data.owner || t('card.hidden')}>
+                    {result.data.owner || t('card.privatelyHeld')}
                   </span>
                 </div>
                 <div className="editorial-data-row">
                   <div className="editorial-data-item">
-                    <span className="editorial-data-label">Acquired</span>
+                    <span className="editorial-data-label">{t('card.acquired')}</span>
                     <span className="editorial-data-value">
-                      {result.data.purchasedDate?.split('T')[0] || 'Unknown'}
+                      {result.data.purchasedDate?.split('T')[0] || t('card.unknown')}
                     </span>
                   </div>
                   <div className="editorial-data-item">
-                    <span className="editorial-data-label">Expires</span>
+                    <span className="editorial-data-label">{t('card.expiresLabel')}</span>
                     <span className="editorial-data-value">
-                      {result.data.expirationDate?.split('T')[0] || 'Unknown'}
+                      {result.data.expirationDate?.split('T')[0] || t('card.unknown')}
                     </span>
                   </div>
                 </div>
@@ -150,7 +152,7 @@ function VerificationCard({
           <div className="editorial-error-blob">
             <span className="editorial-error-icon">⚠</span>
             <span className="editorial-error-text">
-              {typeof result.error === 'string' ? result.error : 'Failed to check domain availability.'}
+              {typeof result.error === 'string' ? result.error : t('card.failedCheck')}
             </span>
           </div>
         )}
@@ -158,7 +160,7 @@ function VerificationCard({
         {/* Expiry Warning Overlay */}
         {status === 'expiring-soon' && (
           <div className="editorial-warning-pill">
-            Expiring in {daysUntilExpiry || 'few'} days
+            {t('card.expiringInDays', { days: daysUntilExpiry || 'few' })}
           </div>
         )}
       </div>
@@ -167,7 +169,7 @@ function VerificationCard({
       <footer className="editorial-card-footer">
         {result.data?.restrictions ? (
           <div className="editorial-restriction-tag">
-            <span className="editorial-restriction-label">Requirement:</span>
+            <span className="editorial-restriction-label">{t('card.restrictionReq')}</span>
             <span className="editorial-restriction-value">{result.data.restrictions.countryRestriction}</span>
           </div>
         ) : (
@@ -188,6 +190,7 @@ const VerificationResultsSection = forwardRef(function VerificationResultsSectio
   },
   ref
 ) {
+  const { t } = useTranslation();
   const entries = Object.entries(bulkResults);
   const [filterStatuses, setFilterStatuses] = useState(
     new Set(['available', 'expiring-soon', 'taken', 'unavailable'])
@@ -322,48 +325,48 @@ const VerificationResultsSection = forwardRef(function VerificationResultsSectio
       <ResultsCockpit bulkResults={bulkResults} />
 
       <h3 className="mb-6" style={{ fontSize: '1.2rem', color: 'var(--text-main)' }}>
-        Verification Results
+        {t('verification.title')}
       </h3>
 
       <div className="fav-tab-body">
         <aside className="fav-tab-sidebar">
           <div className="fav-sidebar-section">
-            <span className="filter-label">Filter by Status</span>
+            <span className="filter-label">{t('favorites.filterStatus')}</span>
             <div className="status-filter-pills fav-sidebar-pills">
               <button
                 type="button"
                 className={`status-pill free ${filterStatuses.has('available') ? 'active' : ''}`}
                 onClick={() => toggleStatusFilter('available')}
               >
-                Free
+                {t('favorites.filterFree')}
               </button>
               <button
                 type="button"
                 className={`status-pill expiring ${filterStatuses.has('expiring-soon') ? 'active' : ''}`}
                 onClick={() => toggleStatusFilter('expiring-soon')}
               >
-                Expiring Soon
+                {t('favorites.filterExpiring')}
               </button>
               <button
                 type="button"
                 className={`status-pill taken ${filterStatuses.has('taken') ? 'active' : ''}`}
                 onClick={() => toggleStatusFilter('taken')}
               >
-                Taken
+                {t('favorites.filterTaken')}
               </button>
               <button
                 type="button"
                 className={`status-pill unavailable ${filterStatuses.has('unavailable') ? 'active' : ''}`}
                 onClick={() => toggleStatusFilter('unavailable')}
               >
-                Unavailable
+                {t('favorites.filterNa')}
               </button>
             </div>
           </div>
 
           <div className="fav-sidebar-section">
             <span className="filter-label" id="domain-multiselect-label">
-              Filter by Domain
+              {t('verification.filterDomain')}
             </span>
             <div className="domain-multiselect-container" ref={dropdownRef}>
               <button
@@ -376,27 +379,27 @@ const VerificationResultsSection = forwardRef(function VerificationResultsSectio
                 aria-labelledby="domain-multiselect-label"
               >
                 {selectedDomainCount === allDomainNames.length
-                  ? 'All Domains Selected'
-                  : `${selectedDomainCount} selected`}
+                  ? t('verification.allDomainsSelected')
+                  : t('verification.selectedCount', { count: selectedDomainCount })}
                 <span aria-hidden>▼</span>
               </button>
               {isDropdownOpen && (
                 <div className="multiselect-dropdown" role="listbox" aria-multiselectable="true">
-                  <div className="multiselect-actions" role="group" aria-label="Domain selection shortcuts">
+                  <div className="multiselect-actions" role="group" aria-label={t('verification.selectionAria')}>
                     <button type="button" className="multiselect-action-btn" onClick={selectAllDomains}>
-                      Select all
+                      {t('verification.selectAll')}
                     </button>
                     <button type="button" className="multiselect-action-btn" onClick={clearAllDomains}>
-                      Select none
+                      {t('verification.selectNone')}
                     </button>
                   </div>
                   <input
                     type="search"
                     className="multiselect-search"
-                    placeholder="Search domains…"
+                    placeholder={t('verification.searchDomains')}
                     value={domainFilterQuery}
                     onChange={(e) => setDomainFilterQuery(e.target.value)}
-                    aria-label="Filter domain list"
+                    aria-label={t('verification.filterDomainAria')}
                     autoFocus
                   />
                   <div className="multiselect-scroll">
@@ -411,7 +414,7 @@ const VerificationResultsSection = forwardRef(function VerificationResultsSectio
                       </label>
                     ))}
                     {filteredDomainNames.length === 0 && (
-                      <p className="multiselect-empty">No matching domains</p>
+                      <p className="multiselect-empty">{t('verification.noMatchingDomains')}</p>
                     )}
                   </div>
                 </div>
@@ -420,7 +423,7 @@ const VerificationResultsSection = forwardRef(function VerificationResultsSectio
           </div>
 
           <div className="fav-sidebar-section">
-            <span className="filter-label">Sort</span>
+            <span className="filter-label">{t('favorites.sort')}</span>
             <div className="monitor-sort-row">
               <select
                 className="monitor-sort"
@@ -430,17 +433,17 @@ const VerificationResultsSection = forwardRef(function VerificationResultsSectio
                   setSortKey(k);
                   setSortDir(d);
                 }}
-                aria-label="Sort results"
+                aria-label={t('verification.sortAria')}
               >
-                <option value="name:asc">Name (A→Z)</option>
-                <option value="name:desc">Name (Z→A)</option>
-                <option value="price:asc">Price (low→high)</option>
-                <option value="price:desc">Price (high→low)</option>
-                <option value="tld:asc">TLD (A→Z)</option>
-                <option value="tld:desc">TLD (Z→A)</option>
+                <option value="name:asc">{t('favorites.sortNameAsc')}</option>
+                <option value="name:desc">{t('favorites.sortNameDesc')}</option>
+                <option value="price:asc">{t('favorites.sortPriceAsc')}</option>
+                <option value="price:desc">{t('favorites.sortPriceDesc')}</option>
+                <option value="tld:asc">{t('favorites.sortTldAsc')}</option>
+                <option value="tld:desc">{t('favorites.sortTldDesc')}</option>
               </select>
-              <span className="monitor-count" aria-label={`${filteredAndSortedEntries.length} shown`}>
-                {filteredAndSortedEntries.length} shown
+              <span className="monitor-count" aria-label={t('favorites.shownCount', { count: filteredAndSortedEntries.length })}>
+                {t('favorites.shownCount', { count: filteredAndSortedEntries.length })}
               </span>
             </div>
           </div>
@@ -463,7 +466,7 @@ const VerificationResultsSection = forwardRef(function VerificationResultsSectio
           ) : (
             <li style={{ gridColumn: '1 / -1', listStyle: 'none' }}>
               <p style={{ textAlign: 'center', padding: '2rem' }} className="text-muted">
-                No results match your filters.
+                {t('verification.noResultsMatch')}
               </p>
             </li>
           )}

@@ -1,4 +1,5 @@
 import React, { useEffect, useCallback, useState, useRef, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 
 export default function CommandPalette({
   open,
@@ -13,21 +14,22 @@ export default function CommandPalette({
   onCopyAvailable,
   hasAvailableToCopy,
 }) {
+  const { t } = useTranslation();
   const [query, setQuery] = useState('');
   const inputRef = useRef(null);
 
   const actions = useMemo(() => {
     const list = [
-      { id: 'tab-search', label: 'Go to Direct Search', keywords: 'search check', run: () => setActiveTab('search') },
-      { id: 'tab-gen', label: 'Go to Generate with AI', keywords: 'ai brainstorm', run: () => setActiveTab('generate') },
-      { id: 'tab-favorites', label: 'Go to Favorites', keywords: 'favorites star tracking saved', run: () => setActiveTab('favorites') },
-      { id: 'focus-search', label: 'Focus domain search field', keywords: 'input', run: () => focusSearchInput?.() },
-      { id: 'focus-prompt', label: 'Focus AI prompt', keywords: 'generate', run: () => focusGenPrompt?.() },
+      { id: 'tab-search', label: t('palette.jumpToSearch'), keywords: 'search check', run: () => setActiveTab('search') },
+      { id: 'tab-gen', label: t('palette.jumpToGenerate'), keywords: 'ai brainstorm', run: () => setActiveTab('generate') },
+      { id: 'tab-favorites', label: t('tabs.favorites'), keywords: 'favorites star tracking saved', run: () => setActiveTab('favorites') },
+      { id: 'focus-search', label: t('palette.focusSearch'), keywords: 'input', run: () => focusSearchInput?.() },
+      { id: 'focus-prompt', label: t('palette.focusPrompt'), keywords: 'generate', run: () => focusGenPrompt?.() },
     ];
     if (canVerifySelected) {
       list.push({
         id: 'verify',
-        label: 'Verify selected domains',
+        label: t('palette.verifySelected'),
         keywords: 'check whois',
         run: () => onVerifySelected?.(),
       });
@@ -35,13 +37,13 @@ export default function CommandPalette({
     list.push(
       {
         id: 'filter-available',
-        label: 'Show only available domains',
+        label: t('palette.showAvailable'),
         keywords: 'free filter',
         run: () => onShowOnlyAvailable?.(),
       },
       {
         id: 'reset-filters',
-        label: 'Reset result filters',
+        label: t('palette.resetFilters'),
         keywords: 'clear all',
         run: () => onResetFilters?.(),
       }
@@ -49,13 +51,14 @@ export default function CommandPalette({
     if (hasAvailableToCopy) {
       list.push({
         id: 'copy-available',
-        label: 'Copy all available domains',
+        label: t('palette.copyAvailable'),
         keywords: 'clipboard',
         run: () => onCopyAvailable?.(),
       });
     }
     return list;
   }, [
+    t,
     setActiveTab,
     focusSearchInput,
     focusGenPrompt,
@@ -133,14 +136,14 @@ export default function CommandPalette({
         className="command-palette glass"
         role="dialog"
         aria-modal="true"
-        aria-label="Command palette"
+        aria-label={t('palette.paletteAria')}
         onMouseDown={(e) => e.stopPropagation()}
       >
         <input
           ref={inputRef}
           type="search"
           className="command-palette-input"
-          placeholder="Type a command…"
+          placeholder={t('palette.search')}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           aria-autocomplete="list"
@@ -148,7 +151,7 @@ export default function CommandPalette({
         />
         <ul id="command-palette-list" className="command-palette-list" role="listbox">
           {filtered.length === 0 ? (
-            <li className="command-palette-empty">No matches</li>
+            <li className="command-palette-empty">{t('palette.noResults')}</li>
           ) : (
             filtered.map((item, i) => (
               <li key={item.id} role="option" aria-selected={i === highlight}>
@@ -168,7 +171,7 @@ export default function CommandPalette({
           )}
         </ul>
         <p className="command-palette-hint">
-          <kbd>↑</kbd> <kbd>↓</kbd> navigate · <kbd>Enter</kbd> run · <kbd>Esc</kbd> close
+          <kbd>↑</kbd> <kbd>↓</kbd> {t('palette.hintNavigate')} · <kbd>Enter</kbd> {t('palette.hintRun')} · <kbd>Esc</kbd> {t('palette.hintClose')}
         </p>
       </div>
     </div>
