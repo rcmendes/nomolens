@@ -1,7 +1,7 @@
 import React, { useState, useEffect, forwardRef } from 'react';
 import VerificationResultsSection from './VerificationResultsSection';
 import { FieldInfo } from './FieldInfo';
-import { MicIcon } from './icons';
+import { MicIcon, PlusIcon } from './icons';
 
 const MAX_WEIGHTED_WORDS = 5;
 /** Matches server.js /api/generate prompt length check */
@@ -405,7 +405,8 @@ const GeneratorTab = forwardRef(function GeneratorTab(
                 onClick={handleAddGenKeyword}
                 disabled={generating || !genKeywordInput.trim() || genKeywords.length >= MAX_WEIGHTED_WORDS}
               >
-                Add
+                <PlusIcon size={18} />
+                <span>Add</span>
               </button>
             </div>
             <p className="keyword-count-hint">

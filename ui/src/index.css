@@ -1134,6 +1134,77 @@ header {
   color: #ffffff;
 }
 
+/* Custom Input Wrapper for Keywords/Focus Words */
+.custom-tld-input {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  background: var(--input-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 14px;
+  padding: 0.4rem; /* Small padding so the button looks inset */
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.custom-tld-input:focus-within {
+  border-color: var(--primary);
+  background: var(--surface-low);
+  box-shadow: 0 0 25px rgba(182, 160, 255, 0.15), 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.custom-tld-input input {
+  flex: 1;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0.6rem 0.75rem !important;
+  font-size: 0.9rem !important;
+  min-width: 0;
+}
+
+.add-tld-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.6rem 1.25rem;
+  background: var(--primary);
+  color: #000000;
+  border: none;
+  border-radius: 10px;
+  font-family: var(--font-family);
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  box-shadow: 0 0 10px rgba(182, 160, 255, 0.2);
+}
+
+.add-tld-btn:hover:not(:disabled) {
+  transform: translateY(-2px) scale(1.02);
+  filter: brightness(1.1);
+  box-shadow: 0 0 20px rgba(182, 160, 255, 0.4);
+}
+
+.add-tld-btn:active:not(:disabled) {
+  transform: translateY(0) scale(0.98);
+}
+
+.add-tld-btn:disabled {
+  background: var(--surface-highest);
+  color: var(--text-muted);
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+[data-theme="light"] .add-tld-btn {
+  color: #ffffff;
+}
+
 .tld-input-inline {
   padding: 0.5rem 1.25rem;
   background: var(--surface-highest);
