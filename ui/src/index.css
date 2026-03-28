@@ -347,30 +347,73 @@ header {
   margin-right: -0.15em;
 }
 
-.brand-tagline {
+.brand-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--glass-bg);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(182, 160, 255, 0.35);
   font-family: var(--font-family);
-  font-size: 0.95rem; /* Slightly smaller for better hierarchy */
+  font-size: 0.6rem;
   font-weight: 600;
-  letter-spacing: 0.25em; /* Increased letter-spacing for premium feel */
-  color: var(--text-muted);
-  margin-top: 8px;
+  letter-spacing: 0.2em;
   text-transform: uppercase;
-  opacity: 0.9;
+  color: rgba(182, 160, 255, 0.85);
+  margin-bottom: 6px;
+}
+
+[data-theme="light"] .brand-eyebrow {
+  border-color: rgba(156, 126, 255, 0.4);
+  color: rgba(110, 80, 220, 0.85);
+}
+
+.brand-tagline {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 8px;
   text-align: left;
+}
+
+.brand-tagline-line1,
+.brand-tagline-line2 {
+  font-family: var(--font-family);
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  transition: opacity 0.3s ease;
+}
+
+.brand-tagline-line1 {
+  background: linear-gradient(90deg, var(--text-muted) 0%, rgba(255,255,255,0.6) 50%, var(--text-muted) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  opacity: 0.6;
+}
+
+.brand-tagline-line2 {
   background: linear-gradient(90deg, var(--text-muted) 0%, #ffffff 50%, var(--text-muted) 100%);
   -webkit-background-clip: text;
   background-clip: text;
-  transition: opacity 0.3s ease;
+  -webkit-text-fill-color: transparent;
+  opacity: 0.95;
 }
 
 [data-theme="light"] .brand-nomo {
   -webkit-text-stroke-color: #111118;
 }
 
-[data-theme="light"] .brand-tagline {
+[data-theme="light"] .brand-tagline-line1,
+[data-theme="light"] .brand-tagline-line2 {
   background: none;
   -webkit-background-clip: initial;
   background-clip: initial;
+  -webkit-text-fill-color: initial;
   color: var(--text-muted);
 }
 

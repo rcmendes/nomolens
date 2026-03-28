@@ -235,11 +235,15 @@ function AppInner() {
           <header className="brand-composition">
             <img src="/logo.png" alt="Nomo Lens Logo" className="brand-logo-img" />
             <div className="brand-text-content">
+              <div className="brand-eyebrow">AI · DOMAIN INTELLIGENCE</div>
               <div className="brand-text-container">
                 <span className="brand-nomo">Nomo</span>
                 <span className="brand-lens">Lens</span>
               </div>
-              <div className="brand-tagline">YOUR IDEAS DESERVE THE PERFECT NAME. LET'S FIND IT TOGETHER.</div>
+              <div className="brand-tagline">
+                <span className="brand-tagline-line1">BRING YOUR IDEA.</span>
+                <span className="brand-tagline-line2">WE'LL FIND THE NAME.</span>
+              </div>
             </div>
           </header>
 
