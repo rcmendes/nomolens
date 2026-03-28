@@ -21,6 +21,20 @@ function statusLabel(status) {
   }
 }
 
+function renderTags(tags) {
+  if (!tags || typeof tags !== 'string') return null;
+  return (
+    <div className="tags-list">
+      {tags.split(',')
+        .map(t => t.trim())
+        .filter(Boolean)
+        .map((tag, i) => (
+          <span key={`${tag}-${i}`} className="tag-chip">{tag}</span>
+        ))}
+    </div>
+  );
+}
+
 function exportJson(favorites) {
   const blob = new Blob([JSON.stringify(favorites, null, 2)], { type: 'application/json' });
   const a = document.createElement('a');
@@ -311,13 +325,16 @@ export default function FavoritesPanel({
                             <span className="editorial-data-value">{fmtDate(row.expirationDate)}</span>
                           </div>
                         )}
-                        {row.tags && (
-                          <div className="editorial-data-item">
-                            <span className="editorial-data-label">Tags</span>
-                            <span className="editorial-data-value">{row.tags}</span>
-                          </div>
-                        )}
                       </div>
+
+                      {row.tags && (
+                        <div className="editorial-data-item">
+                          <span className="editorial-data-label">Tags</span>
+                          <div className="editorial-data-value">
+                            {renderTags(row.tags)}
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     {/* Card footer: notes & tags toggle */}
@@ -354,13 +371,13 @@ export default function FavoritesPanel({
                         <div className="fav-notes-field">
                           <label className="fav-notes-label" htmlFor={`tags-${row.domain}`}>
                             Tags
-                            <span className="fav-notes-hint">comma-separated</span>
+                            <span className="fav-notes-hint">comma-separated keywords</span>
                           </label>
                           <input
                             id={`tags-${row.domain}`}
                             type="text"
                             className="fav-tags-input"
-                            placeholder="e.g. watch, client-a, priority"
+                            placeholder="e.g. watch, work, priority"
                             value={row.tags ?? ''}
                             onChange={(e) => onUpdateFavorite?.(row.domain, { tags: e.target.value })}
                           />
